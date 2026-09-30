@@ -7,7 +7,7 @@ from store.models import DeveloperProfile
 
 
 class Command(BaseCommand):
-    help = "Crée le premier compte administrateur WEB STORE."
+    help = "Crée ou met à jour le compte administrateur WEB STORE."
 
     def add_arguments(self, parser):
         parser.add_argument("--email")
@@ -39,12 +39,19 @@ class Command(BaseCommand):
             )
             return
 
-        if (
-            User.objects.filter(email__iexact=email).exists()
-            or User.objects.filter(username=username).exists()
-        ):
+        user = User.objects.filter(username=username).first()
+
+        if user:
+            user.email = email
+            user.set_password(password)
+            user.is_staff = True
+            user.is_superuser = True
+            user.save()
+
             self.stdout.write(
-                self.style.WARNING("Cet utilisateur existe déjà.")
+                self.style.SUCCESS(
+                    f"Admin existant mis à jour: {user.username}"
+                )
             )
             return
 
