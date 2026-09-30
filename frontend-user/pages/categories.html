@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catégories — WEB STORE</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<header>
+  <div class="logo">WEB<span>STORE</span></div>
+  <nav class="menu active" style="position: static; display: flex; border: none; padding: 0;">
+    <a href="../index.html">← Retour au catalogue</a>
+  </nav>
+</header>
+<main>
+  <section class="welcome">
+    <h1>Catégories</h1>
+    <p>Utilisez les filtres de catégories directement depuis l'accueil pour explorer le catalogue.</p>
+  </section>
+  <div id="categoryGrid" class="categories" style="flex-wrap: wrap;"></div>
+</main>
+<footer>
+  WEB STORE
+  <br><br>
+  by <strong>DEKAL HOUSE</strong>
+</footer>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script>WebStoreAPI.trackVisitor().catch(() => {});</script>
+<script>
+  WebStoreAPI.getCategories().then((categories) => {
+    const grid = document.getElementById("categoryGrid");
+    categories.forEach((cat) => {
+      const a = document.createElement("a");
+      a.href = `../index.html?category=${encodeURIComponent(cat.slug)}`;
+      a.className = "category";
+      a.textContent = cat.name;
+      a.style.textDecoration = "none";
+      grid.appendChild(a);
+    });
+  }).catch(() => {
+    document.getElementById("categoryGrid").innerHTML =
+      '<p style="color: var(--color-text-muted); font-size: 13px;">Catégories indisponibles pour le moment.</p>';
+  });
+</script>
+</body>
+</html>
