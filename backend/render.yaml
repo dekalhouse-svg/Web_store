@@ -2,7 +2,7 @@ services:
   - type: web
     name: webstore-backend
     env: python
-    buildCommand: pip install -r requirements.txt && python manage.py migrate && python manage.py seed_categories
+buildCommand: pip install -r requirements.txt && python manage.py migrate && python manage.py seed_categories && python manage.py create_admin
     startCommand: gunicorn webstore.wsgi:application
     envVars:
       - key: DJANGO_SECRET_KEY
