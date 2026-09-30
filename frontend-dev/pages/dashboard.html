@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — WEB STORE Dev</title>
+<meta name="theme-color" content="#12291B">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB<span>STORE</span></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="active">Vue générale</a>
+      <a href="projects.html">Mes projets</a>
+      <a href="messages.html">Messages</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title">Vue générale</div>
+      <div></div>
+    </div>
+
+    <div class="page">
+
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-card"><div class="value">0</div><div class="label">Projets publiés</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">En attente</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Visites des fiches</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Messages non lus</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Activité récente</h2>
+        </div>
+        <div id="activityList" class="empty-state">Aucune activité récente.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  loadDashboard();
+
+  async function loadDashboard() {
+    try {
+      const stats = await WebStoreDevAPI.getDashboardStats();
+      renderStats(stats);
+    } catch (err) {
+      // Pas de backend disponible pour le moment : les cartes restent à 0,
+      // conformément à la règle "ne jamais inventer de statistiques".
+      console.warn("Statistiques indisponibles :", err.message);
+    }
+  }
+
+  function renderStats(stats) {
+    const cards = [
+      { value: stats.published_count ?? 0, label: "Projets publiés" },
+      { value: stats.pending_count ?? 0, label: "En attente" },
+      { value: stats.total_views ?? 0, label: "Visites des fiches" },
+      { value: stats.unread_messages ?? 0, label: "Messages non lus" },
+    ];
+
+    const grid = document.getElementById("statGrid");
+    grid.innerHTML = cards
+      .map(
+        (c) => `<div class="stat-card"><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
+      )
+      .join("");
+
+    const activityList = document.getElementById("activityList");
+    if (stats.recent_activity && stats.recent_activity.length > 0) {
+      activityList.className = "";
+      activityList.innerHTML = stats.recent_activity
+        .map((item) => `<div style="padding:8px 0; font-size:13px; border-bottom:1px solid var(--color-border);">${item.label}</div>`)
+        .join("");
+    }
+  }
+</script>
+</body>
+</html>

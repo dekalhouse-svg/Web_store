@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistiques du projet — WEB STORE Dev</title>
+<meta name="theme-color" content="#12291B">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB<span>STORE</span></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html">Vue générale</a>
+      <a href="projects.html" class="active">Mes projets</a>
+      <a href="messages.html">Messages</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title" id="pageTitle">Statistiques</div>
+      <div></div>
+    </div>
+
+    <div class="page">
+
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-card"><div class="value">0</div><div class="label">Visites de la fiche</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Clics sur « Visiter »</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Installations PWA détectées</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Commentaires</div></div>
+      </div>
+
+      <div class="card">
+        <p style="font-size:12px; color: var(--color-text-muted); line-height:1.6;">
+
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Commentaires reçus</h2></div>
+        <div id="commentsList" class="empty-state">Aucun commentaire pour le moment.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  const projectId = new URLSearchParams(window.location.search).get("id");
+  loadStats();
+
+  async function loadStats() {
+    if (!projectId) return;
+    try {
+      const stats = await WebStoreDevAPI.getProjectStats(projectId);
+      document.getElementById("pageTitle").textContent = `Statistiques / ${stats.project_name || ""}`;
+      const cards = [
+        { value: stats.sheet_views ?? 0, label: "Visites de la fiche" },
+        { value: stats.visit_clicks ?? 0, label: "Clics sur « Visiter »" },
+        { value: stats.installs ?? 0, label: "Téléchargements / installations PWA" },
+        { value: stats.comments_count ?? 0, label: "Commentaires" },
+      ];
+      document.getElementById("statGrid").innerHTML = cards
+        .map((c) => `<div class="stat-card"><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`)
+        .join("");
+    } catch (err) {
+      console.warn("Statistiques indisponibles :", err.message);
+    }
+
+    try {
+      const comments = await WebStoreDevAPI.getProjectComments(projectId);
+      if (comments.length > 0) {
+        document.getElementById("commentsList").outerHTML = `<div id="commentsList">${comments
+          .map((c) => `<div style="padding:10px 0; border-bottom:1px solid var(--color-border); font-size:13px;"><strong>${c.author_name}</strong><br>${c.content}</div>`)
+          .join("")}</div>`;
+      }
+    } catch (err) {
+      // silencieux : la carte statistiques reste la source d'erreur visible
+    }
+  }
+</script>
+</body>
+</html>

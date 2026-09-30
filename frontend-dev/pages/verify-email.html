@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vérification e-mail — WEB STORE</title>
+<meta name="theme-color" content="#12291B">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">WEB<span>STORE</span> · Dev</div>
+    <h1>Vérifiez votre e-mail</h1>
+    <p class="subtitle" id="emailHint">Un code temporaire vous a été envoyé.</p>
+
+    <div id="formMessage"></div>
+
+    <form id="verifyForm">
+      <div class="field">
+        <label for="code">Code de vérification</label>
+        <input type="text" id="code" inputmode="numeric" maxlength="6" required>
+      </div>
+      <button type="submit" class="btn" id="submitBtn">Vérifier</button>
+    </form>
+
+    <p class="auth-links">
+      Vous n'avez rien reçu ? <a href="#" id="resendLink">Renvoyer le code</a>
+    </p>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const email = params.get("email") || "";
+  document.getElementById("emailHint").textContent = email
+    ? `Un code temporaire a été envoyé à ${email}.`
+    : "Un code temporaire vous a été envoyé par e-mail.";
+
+  document.getElementById("verifyForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitBtn = document.getElementById("submitBtn");
+    const messageBox = document.getElementById("formMessage");
+    messageBox.innerHTML = "";
+    submitBtn.disabled = true;
+
+    try {
+      await WebStoreDevAPI.verifyEmail({ email, code: document.getElementById("code").value.trim() });
+      messageBox.innerHTML = `<div class="form-message success">E-mail confirmé. Vous pouvez vous connecter.</div>`;
+      setTimeout(() => (window.location.href = "login.html"), 1200);
+    } catch (err) {
+      messageBox.innerHTML = `<div class="form-message error">${err.message}</div>`;
+      submitBtn.disabled = false;
+    }
+  });
+
+  document.getElementById("resendLink").addEventListener("click", async (event) => {
+    event.preventDefault();
+    const messageBox = document.getElementById("formMessage");
+    try {
+      await WebStoreDevAPI.resendVerificationCode(email);
+      messageBox.innerHTML = `<div class="form-message success">Un nouveau code a été envoyé.</div>`;
+    } catch (err) {
+      messageBox.innerHTML = `<div class="form-message error">${err.message}</div>`;
+    }
+  });
+</script>
+</body>
+</html>

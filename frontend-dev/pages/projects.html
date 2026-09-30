@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes projets — WEB STORE Dev</title>
+<meta name="theme-color" content="#12291B">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB<span>STORE</span></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html">Vue générale</a>
+      <a href="projects.html" class="active">Mes projets</a>
+      <a href="messages.html">Messages</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title">Mes projets</div>
+      <a href="project-form.html" class="btn btn-inline" style="width:auto;">+ Ajouter un projet</a>
+    </div>
+
+    <div class="page">
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Type</th>
+              <th>Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="projectsTableBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState" hidden>Vous n'avez pas encore publié de projet.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  loadProjects();
+
+  async function loadProjects() {
+    const body = document.getElementById("projectsTableBody");
+    const empty = document.getElementById("emptyState");
+
+    try {
+      const projects = await WebStoreDevAPI.getProjects();
+      if (projects.length === 0) {
+        empty.hidden = false;
+        return;
+      }
+      body.innerHTML = projects.map(rowFor).join("");
+    } catch (err) {
+      empty.hidden = false;
+      empty.textContent = "Impossible de charger vos projets pour le moment.";
+    }
+  }
+
+  function rowFor(project) {
+    return `
+      <tr>
+        <td>${escapeHtml(project.name)}</td>
+        <td>${project.type}</td>
+        <td><span class="status-pill status-${project.status}">${statusLabel(project.status)}</span></td>
+        <td style="text-align:right;">
+          <a href="project-stats.html?id=${project.id}" style="margin-right:10px; color: var(--color-primary); font-size:12px;">Statistiques</a>
+          <a href="project-form.html?id=${project.id}" style="color: var(--color-text-muted); font-size:12px;">Modifier</a>
+        </td>
+      </tr>
+    `;
+  }
+
+  function statusLabel(status) {
+    const labels = {
+      BROUILLON: "Brouillon",
+      EN_ATTENTE: "En attente",
+      PUBLIE: "Publié",
+      REJETE: "Rejeté",
+      SUSPENDU: "Suspendu",
+    };
+    return labels[status] || status;
+  }
+
+  function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

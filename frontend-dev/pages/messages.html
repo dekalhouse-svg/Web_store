@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Messages — WEB STORE Dev</title>
+<meta name="theme-color" content="#12291B">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB<span>STORE</span></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html">Vue générale</a>
+      <a href="projects.html">Mes projets</a>
+      <a href="messages.html" class="active">Messages</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title">Messages</div>
+      <div></div>
+    </div>
+
+    <div class="page">
+      <div class="card" id="inboxCard">
+        <div id="messageList" class="empty-state">Aucun message.</div>
+      </div>
+
+      <div class="card" id="messageDetail" hidden>
+        <div class="card-header">
+          <h2 id="detailSubject"></h2>
+          <button class="btn-outline btn-inline btn" style="width:auto;" onclick="closeDetail()">Fermer</button>
+        </div>
+        <p id="detailMeta" style="font-size:11px; color: var(--color-text-muted); margin-bottom:12px;"></p>
+        <p id="detailContent" style="font-size:14px; line-height:1.6; white-space:pre-wrap;"></p>
+
+        <form id="replyForm" class="form-grid" style="margin-top:16px;">
+          <textarea id="replyContent" rows="3" placeholder="Répondre à l'administration..."></textarea>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-inline">Envoyer la réponse</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  let currentMessageId = null;
+
+  loadMessages();
+
+  async function loadMessages() {
+    const list = document.getElementById("messageList");
+    try {
+      const messages = await WebStoreDevAPI.getMessages();
+      if (messages.length === 0) return;
+
+      list.className = "";
+      list.innerHTML = messages
+        .map(
+          (m) => `
+          <div class="message-item ${m.read ? "" : "unread"}" onclick="openMessage(${m.id})">
+            <div class="subject">${escapeHtml(m.subject)}</div>
+            <div class="meta">${new Date(m.created_at).toLocaleDateString("fr-FR")}</div>
+          </div>`
+        )
+        .join("");
+    } catch (err) {
+      list.textContent = "Impossible de charger vos messages pour le moment.";
+    }
+  }
+
+  async function openMessage(id) {
+    currentMessageId = id;
+    try {
+      const message = await WebStoreDevAPI.getMessage(id);
+      document.getElementById("detailSubject").textContent = message.subject;
+      document.getElementById("detailMeta").textContent = new Date(message.created_at).toLocaleString("fr-FR");
+      document.getElementById("detailContent").textContent = message.content;
+      document.getElementById("messageDetail").hidden = false;
+      if (!message.read) {
+        await WebStoreDevAPI.markMessageRead(id);
+        loadMessages();
+      }
+    } catch (err) {
+      alert("Impossible d'ouvrir ce message.");
+    }
+  }
+
+  function closeDetail() {
+    document.getElementById("messageDetail").hidden = true;
+    currentMessageId = null;
+  }
+
+  document.getElementById("replyForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const content = document.getElementById("replyContent").value.trim();
+    if (!content || !currentMessageId) return;
+
+    try {
+      await WebStoreDevAPI.replyToMessage(currentMessageId, content);
+      document.getElementById("replyContent").value = "";
+      alert("Réponse envoyée.");
+    } catch (err) {
+      alert("Impossible d'envoyer la réponse pour le moment.");
+    }
+  });
+
+  function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

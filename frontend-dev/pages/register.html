@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créer un compte développeur — WEB STORE</title>
+<meta name="theme-color" content="#12291B">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">WEB<span>STORE</span> . Dev</div>
+    <h1>Créer un compte développeur</h1>
+    <p class="subtitle">Publiez et gérez vos projets Web et PWA.</p>
+
+    <div id="formMessage"></div>
+
+    <form id="registerForm">
+      <div class="field">
+        <label for="fullName">Nom</label>
+        <input type="text" id="fullName" required>
+      </div>
+      <div class="field">
+        <label for="username">Nom d'utilisateur</label>
+        <input type="text" id="username" required>
+      </div>
+      <div class="field">
+        <label for="email">E-mail <span><p>(votre e-mail sera utilisée lors de la réinitialisation de mot de passe et pour recevoir des notifications)</p></span></label>
+        <input type="email" id="email" required>
+      </div>
+      <div class="field">
+        <label for="phone">Téléphone (optionnel)</label>
+        <input type="tel" id="phone">
+      </div>
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" minlength="8" required>
+        <p class="field-hint">8 caractères minimum.</p>
+      </div>
+      <button type="submit" class="btn" id="submitBtn">Créer mon compte</button>
+    </form>
+
+    <p class="auth-links">Déjà inscrit ? <a href="login.html">Se connecter</a></p>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script>
+  document.getElementById("registerForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitBtn = document.getElementById("submitBtn");
+    const messageBox = document.getElementById("formMessage");
+    messageBox.innerHTML = "";
+
+    const payload = {
+      full_name: document.getElementById("fullName").value.trim(),
+      username: document.getElementById("username").value.trim(),
+      email: document.getElementById("email").value.trim(),
+      phone: document.getElementById("phone").value.trim(),
+      password: document.getElementById("password").value,
+    };
+
+    submitBtn.disabled = true;
+    try {
+      await WebStoreDevAPI.register(payload);
+      window.location.href = "login.html";
+    } catch (err) {
+      messageBox.innerHTML = `<div class="form-message error">${err.message}</div>`;
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
