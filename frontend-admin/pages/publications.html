@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Publications — WEB STORE Admin</title>
+<meta name="theme-color" content="#0B0B0F">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB STORE<strong>ADMIN</strong></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html">Vue générale</a>
+      <a href="developers.html">Développeurs</a>
+      <a href="publications.html" class="active">Publications</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title">Publications</div>
+      <div></div>
+    </div>
+
+    <div class="page">
+      <div class="card">
+        <div class="card-header">
+          <h2>Toutes les publications</h2>
+          <input type="search" id="searchInput" class="search-input" placeholder="Rechercher un projet...">
+        </div>
+
+        <div class="toolbar" id="statusFilters" style="margin-bottom:14px;">
+          <button class="filter-chip active" data-status="all">Tous</button>
+          <button class="filter-chip" data-status="EN_ATTENTE">En attente</button>
+          <button class="filter-chip" data-status="PUBLIE">Publiés</button>
+          <button class="filter-chip" data-status="REJETE">Rejetés</button>
+          <button class="filter-chip" data-status="SUSPENDU">Suspendus</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Projet</th>
+              <th>Développeur</th>
+              <th>Type</th>
+              <th>Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState" hidden>Aucune publication trouvée.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  let publications = [];
+  let activeStatus = "all";
+  loadPublications();
+
+  document.getElementById("searchInput").addEventListener("input", render);
+  document.querySelectorAll(".filter-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".filter-chip").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeStatus = chip.dataset.status;
+      render();
+    });
+  });
+
+  async function loadPublications() {
+    try {
+      publications = await WebStoreAdminAPI.getPublications();
+      render();
+    } catch (err) {
+      document.getElementById("emptyState").hidden = false;
+      document.getElementById("emptyState").textContent = "Impossible de charger les publications.";
+    }
+  }
+
+  function render() {
+    const search = document.getElementById("searchInput").value.toLowerCase().trim();
+    const filtered = publications.filter((p) => {
+      const matchesStatus = activeStatus === "all" || p.status === activeStatus;
+      const matchesSearch = p.name.toLowerCase().includes(search) || p.developer_name.toLowerCase().includes(search);
+      return matchesStatus && matchesSearch;
+    });
+
+    const body = document.getElementById("tableBody");
+    const empty = document.getElementById("emptyState");
+
+    if (filtered.length === 0) {
+      body.innerHTML = "";
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+
+    body.innerHTML = filtered
+      .map(
+        (p) => `
+        <tr>
+          <td>${escapeHtml(p.name)}</td>
+          <td>${escapeHtml(p.developer_name)}</td>
+          <td>${p.type}</td>
+          <td><span class="status-pill status-${p.status}">${statusLabel(p.status)}</span></td>
+          <td><a class="link-action" href="publication-detail.html?id=${p.id}">Examiner</a></td>
+        </tr>`
+      )
+      .join("");
+  }
+
+  function statusLabel(status) {
+    const labels = { BROUILLON: "Brouillon", EN_ATTENTE: "En attente", PUBLIE: "Publié", REJETE: "Rejeté", SUSPENDU: "Suspendu" };
+    return labels[status] || status;
+  }
+
+  function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

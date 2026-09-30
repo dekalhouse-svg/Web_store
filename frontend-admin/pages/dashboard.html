@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — WEB STORE Admin</title>
+<meta name="theme-color" content="#0B0B0F">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB STORE<strong>ADMIN</strong></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="active">Vue générale</a>
+      <a href="developers.html">Développeurs</a>
+      <a href="publications.html">Publications</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title">Vue générale</div>
+      <div></div>
+    </div>
+
+    <div class="page">
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-card"><div class="value">0</div><div class="label">Développeurs</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Visiteurs</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Projets publiés</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">En attente de modération</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Signalements ouverts</div></div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="value">0</div><div class="label">Projets WEB</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Projets PWA</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Projets rejetés</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Projets suspendus</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Visite générale</h2></div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="value" id="generalVisitors">0</div><div class="label">Visiteurs uniques</div></div>
+          <div class="stat-card"><div class="value" id="generalProjectVisits">0</div><div class="label">Visites de fiches</div></div>
+          <div class="stat-card"><div class="value" id="generalVisitClicks">0</div><div class="label">Clics « Visiter »</div></div>
+          <div class="stat-card"><div class="value" id="generalInstalls">0</div><div class="label">Installations PWA</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Projets en attente de modération</h2></div>
+        <div id="pendingList" class="empty-state">Aucun projet en attente.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  loadDashboard();
+
+  async function loadDashboard() {
+    try {
+      const stats = await WebStoreAdminAPI.getDashboardStats();
+      renderStats(stats);
+    } catch (err) {
+      console.warn("Statistiques indisponibles :", err.message);
+    }
+  }
+
+  function renderStats(stats) {
+    const row1 = [
+      { value: stats.developers_count ?? 0, label: "Développeurs" },
+      { value: stats.visitors_count ?? 0, label: "Visiteurs" },
+      { value: stats.published_count ?? 0, label: "Projets publiés" },
+      { value: stats.pending_count ?? 0, label: "En attente de modération" },
+      { value: stats.open_reports_count ?? 0, label: "Signalements ouverts" },
+    ];
+    const row2 = [
+      { value: stats.web_count ?? 0, label: "Projets WEB" },
+      { value: stats.pwa_count ?? 0, label: "Projets PWA" },
+      { value: stats.rejected_count ?? 0, label: "Projets rejetés" },
+      { value: stats.suspended_count ?? 0, label: "Projets suspendus" },
+    ];
+
+    const grids = document.querySelectorAll(".stat-grid");
+    grids[0].innerHTML = row1.map(cardHtml).join("");
+    grids[1].innerHTML = row2.map(cardHtml).join("");
+
+    document.getElementById("generalVisitors").textContent = stats.visitors_count ?? 0;
+    document.getElementById("generalProjectVisits").textContent = stats.total_project_visits ?? 0;
+    document.getElementById("generalVisitClicks").textContent = stats.total_visit_clicks ?? 0;
+    document.getElementById("generalInstalls").textContent = stats.total_installs ?? 0;
+
+    const pendingList = document.getElementById("pendingList");
+    if (stats.pending_projects && stats.pending_projects.length > 0) {
+      pendingList.className = "";
+      pendingList.innerHTML = stats.pending_projects
+        .map(
+          (p) => `<div style="padding:8px 0; border-bottom:1px solid var(--color-border); font-size:13px; display:flex; justify-content:space-between;">
+            <span>${p.name} — ${p.developer_name}</span>
+            <a class="link-action" href="publication-detail.html?id=${p.id}">Examiner</a>
+          </div>`
+        )
+        .join("");
+    }
+  }
+
+  function cardHtml(c) {
+    return `<div class="stat-card"><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`;
+  }
+</script>
+</body>
+</html>

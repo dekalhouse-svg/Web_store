@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiche développeur — WEB STORE Admin</title>
+<meta name="theme-color" content="#0B0B0F">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB STORE<strong>ADMIN</strong></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html">Vue générale</a>
+      <a href="developers.html" class="active">Développeurs</a>
+      <a href="publications.html">Publications</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title" id="pageTitle">Fiche développeur</div>
+      <div></div>
+    </div>
+
+    <div class="page">
+
+      <div class="card" id="profileCard">
+        <p>Chargement…</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Projets</h2></div>
+        <div id="projectsList" class="empty-state">Aucun projet.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Statistiques disponibles</h2></div>
+        <div class="stat-grid" id="statGrid">
+          <div class="stat-card"><div class="value">0</div><div class="label">Visites cumulées</div></div>
+          <div class="stat-card"><div class="value">0</div><div class="label">Clics « Visiter »</div></div>
+          <div class="stat-card"><div class="value">0</div><div class="label">Installations détectées</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Signalements concernant ses projets</h2></div>
+        <div id="reportsList" class="empty-state">Aucun signalement.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Envoyer un message</h2></div>
+        <form id="messageForm">
+          <div class="field">
+            <label for="subject">Sujet</label>
+            <input type="text" id="subject" required>
+          </div>
+          <div class="field">
+            <label for="content">Message</label>
+            <textarea id="content" rows="4" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-inline">Envoyer</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  const developerId = new URLSearchParams(window.location.search).get("id");
+  loadDeveloper();
+
+  async function loadDeveloper() {
+    if (!developerId) return;
+    try {
+      const dev = await WebStoreAdminAPI.getDeveloper(developerId);
+      renderProfile(dev);
+      renderProjects(dev.projects || []);
+      renderStats(dev.stats || {});
+      renderReports(dev.reports || []);
+    } catch (err) {
+      document.getElementById("profileCard").innerHTML = `<p>Impossible de charger cette fiche.</p>`;
+    }
+  }
+
+  function renderProfile(dev) {
+    document.getElementById("pageTitle").textContent = dev.display_name;
+    document.getElementById("profileCard").innerHTML = `
+      <div class="detail-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px,1fr));">
+        <div><div class="detail-label">Nom</div><div class="detail-value">${escapeHtml(dev.display_name)}</div></div>
+        <div><div class="detail-label">Username</div><div class="detail-value">${escapeHtml(dev.username)}</div></div>
+        <div><div class="detail-label">E-mail</div><div class="detail-value">${escapeHtml(dev.email)}</div></div>
+        <div><div class="detail-label">Inscrit le</div><div class="detail-value">${new Date(dev.created_at).toLocaleDateString("fr-FR")}</div></div>
+        <div><div class="detail-label">Statut</div><div class="detail-value"><span class="status-pill status-${dev.status}">${dev.status === "ACTIF" ? "Actif" : "Suspendu"}</span></div></div>
+      </div>
+      <div class="toolbar" style="margin-top:16px;">
+        ${dev.status === "ACTIF"
+          ? `<button class="btn btn-warning btn-inline" id="suspendBtn">Suspendre le compte</button>`
+          : `<button class="btn btn-success btn-inline" id="reactivateBtn">Réactiver le compte</button>`
+        }
+        <button class="btn btn-danger btn-inline" id="deleteBtn">Supprimer le compte</button>
+      </div>
+    `;
+
+    document.getElementById("suspendBtn")?.addEventListener("click", async () => {
+      if (!confirm("Suspendre ce compte développeur ?")) return;
+      await WebStoreAdminAPI.suspendDeveloper(developerId);
+      loadDeveloper();
+    });
+    document.getElementById("reactivateBtn")?.addEventListener("click", async () => {
+      await WebStoreAdminAPI.reactivateDeveloper(developerId);
+      loadDeveloper();
+    });
+    document.getElementById("deleteBtn")?.addEventListener("click", async () => {
+      if (!confirm("Supprimer définitivement ce compte ? Cette action est irréversible.")) return;
+      await WebStoreAdminAPI.deleteDeveloper(developerId);
+      window.location.href = "developers.html";
+    });
+  }
+
+  function renderProjects(projects) {
+    const list = document.getElementById("projectsList");
+    if (projects.length === 0) return;
+    list.className = "";
+    list.innerHTML = projects
+      .map(
+        (p) => `<div style="padding:8px 0; border-bottom:1px solid var(--color-border); font-size:13px; display:flex; justify-content:space-between;">
+          <span>${escapeHtml(p.name)}</span>
+          <span><span class="status-pill status-${p.status}">${p.status}</span>
+          <a class="link-action" href="publication-detail.html?id=${p.id}" style="margin-left:10px;">Voir</a></span>
+        </div>`
+      )
+      .join("");
+  }
+
+  function renderStats(stats) {
+    const cards = [
+      { value: stats.total_views ?? 0, label: "Visites cumulées" },
+      { value: stats.total_visit_clicks ?? 0, label: "Clics « Visiter »" },
+      { value: stats.total_installs ?? 0, label: "Installations détectées" },
+    ];
+    document.getElementById("statGrid").innerHTML = cards
+      .map((c) => `<div class="stat-card"><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`)
+      .join("");
+  }
+
+  function renderReports(reports) {
+    const list = document.getElementById("reportsList");
+    if (reports.length === 0) return;
+    list.className = "";
+    list.innerHTML = reports
+      .map(
+        (r) => `<div style="padding:8px 0; border-bottom:1px solid var(--color-border); font-size:13px;">
+          <strong>${escapeHtml(r.project_name)}</strong> — ${escapeHtml(r.reason)}
+        </div>`
+      )
+      .join("");
+  }
+
+  document.getElementById("messageForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const subject = document.getElementById("subject").value.trim();
+    const content = document.getElementById("content").value.trim();
+    if (!subject || !content) return;
+
+    try {
+      await WebStoreAdminAPI.sendMessageToDeveloper(developerId, { subject, content });
+      document.getElementById("messageForm").reset();
+      alert("Message envoyé.");
+    } catch (err) {
+      alert("Impossible d'envoyer le message pour le moment.");
+    }
+  });
+
+  function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

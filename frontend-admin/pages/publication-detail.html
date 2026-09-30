@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Publication — WEB STORE Admin</title>
+<meta name="theme-color" content="#0B0B0F">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB STORE<strong>ADMIN</strong></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html">Vue générale</a>
+      <a href="developers.html">Développeurs</a>
+      <a href="publications.html" class="active">Publications</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title" id="pageTitle">Publication</div>
+      <div></div>
+    </div>
+
+    <div class="page">
+
+      <div class="card" id="publicationCard">
+        <p>Chargement…</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Commentaires</h2></div>
+        <div id="commentsList" class="empty-state">Aucun commentaire.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Signalements</h2></div>
+        <div id="reportsList" class="empty-state">Aucun signalement.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  const publicationId = new URLSearchParams(window.location.search).get("id");
+  loadPublication();
+
+  async function loadPublication() {
+    if (!publicationId) return;
+    try {
+      const project = await WebStoreAdminAPI.getPublication(publicationId);
+      render(project);
+    } catch (err) {
+      document.getElementById("publicationCard").innerHTML = `<p>Impossible de charger cette publication.</p>`;
+    }
+  }
+
+  function render(project) {
+    document.getElementById("pageTitle").textContent = project.name;
+
+    document.getElementById("publicationCard").innerHTML = `
+      <div class="detail-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px,1fr));">
+        <div><div class="detail-label">Développeur</div><div class="detail-value">
+          <a class="link-action" href="developer-detail.html?id=${project.developer_id}">${escapeHtml(project.developer_name)}</a>
+        </div></div>
+        <div><div class="detail-label">Type</div><div class="detail-value">${project.type}</div></div>
+        <div><div class="detail-label">Catégorie</div><div class="detail-value">${escapeHtml(project.category || "—")}</div></div>
+        <div><div class="detail-label">Statut</div><div class="detail-value"><span class="status-pill status-${project.status}">${project.status}</span></div></div>
+        <div><div class="detail-label">À la une</div><div class="detail-value">${project.featured ? "Oui" : "Non"}</div></div>
+      </div>
+
+      <div class="stat-grid" style="margin-top:18px;">
+        <div class="stat-card"><div class="value">${project.stats?.comments ?? 0}</div><div class="label">Commentaires</div></div>
+        <div class="stat-card"><div class="value">${project.stats?.visits ?? 0}</div><div class="label">Visites</div></div>
+        ${project.type === "PWA" ? `<div class="stat-card"><div class="value">${project.stats?.downloads ?? 0}</div><div class="label">Téléchargements / installations PWA</div></div>` : ""}
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="detail-label">URL</div>
+        <div class="detail-value"><a href="${project.url}" target="_blank" rel="noopener" class="link-action">${escapeHtml(project.url)}</a></div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="detail-label">Description</div>
+        <p style="font-size:13px; margin-top:4px; color: var(--color-text-muted); line-height:1.6;">${escapeHtml(project.description || "")}</p>
+      </div>
+
+      ${project.rejection_reason ? `<div class="reason-box"><strong>Motif de rejet :</strong> ${escapeHtml(project.rejection_reason)}</div>` : ""}
+      ${project.suspension_reason ? `<div class="reason-box"><strong>Motif de suspension :</strong> ${escapeHtml(project.suspension_reason)}</div>` : ""}
+
+      <div class="toolbar" style="margin-top:18px;">
+        ${project.status === "EN_ATTENTE" ? `
+          <button class="btn btn-success btn-inline" id="approveBtn">Approuver</button>
+          <button class="btn btn-danger btn-inline" id="rejectBtn">Rejeter</button>
+        ` : ""}
+        ${project.status === "PUBLIE" ? `<button class="btn btn-warning btn-inline" id="suspendBtn">Suspendre</button>` : ""}
+        ${project.status === "SUSPENDU" ? `<button class="btn btn-success btn-inline" id="approveBtn">Republier</button>` : ""}
+        <button class="btn btn-outline btn-inline" id="featuredBtn">${project.featured ? "Retirer de la une" : "Mettre à la une"}</button>
+        <button class="btn btn-outline btn-inline" id="deleteBtn">Supprimer</button>
+      </div>
+    `;
+
+    document.getElementById("featuredBtn")?.addEventListener("click", async () => {
+      await WebStoreAdminAPI.setFeatured(publicationId, !project.featured);
+      loadPublication();
+    });
+
+    document.getElementById("approveBtn")?.addEventListener("click", async () => {
+      await WebStoreAdminAPI.approvePublication(publicationId);
+      loadPublication();
+    });
+
+    document.getElementById("rejectBtn")?.addEventListener("click", async () => {
+      const reason = prompt("Motif du rejet (visible par le développeur) :");
+      if (!reason) return;
+      await WebStoreAdminAPI.rejectPublication(publicationId, reason);
+      loadPublication();
+    });
+
+    document.getElementById("suspendBtn")?.addEventListener("click", async () => {
+      const reason = prompt("Motif de la suspension (visible par le développeur) :");
+      if (!reason) return;
+      await WebStoreAdminAPI.suspendPublication(publicationId, reason);
+      loadPublication();
+    });
+
+    document.getElementById("deleteBtn")?.addEventListener("click", async () => {
+      const reason = prompt("Motif de la suppression (enregistré) :");
+      if (!reason) return;
+      if (!confirm("Supprimer définitivement cette publication ?")) return;
+      await WebStoreAdminAPI.deletePublication(publicationId, reason);
+      window.location.href = "publications.html";
+    });
+
+    renderComments(project.comments || []);
+    renderReports(project.reports || []);
+  }
+
+  function renderComments(comments) {
+    const list = document.getElementById("commentsList");
+    if (comments.length === 0) return;
+    list.className = "";
+    list.innerHTML = comments
+      .map((c) => `<div style="padding:8px 0; border-bottom:1px solid var(--color-border); font-size:13px;"><strong>${escapeHtml(c.author_name)}</strong> — ${escapeHtml(c.content)}</div>`)
+      .join("");
+  }
+
+  function renderReports(reports) {
+    const list = document.getElementById("reportsList");
+    if (reports.length === 0) return;
+    list.className = "";
+    list.innerHTML = reports
+      .map((r) => `<div style="padding:8px 0; border-bottom:1px solid var(--color-border); font-size:13px;">${escapeHtml(r.reason)} — ${escapeHtml(r.description || "")}</div>`)
+      .join("");
+  }
+
+  function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

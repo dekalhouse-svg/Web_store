@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Développeurs — WEB STORE Admin</title>
+<meta name="theme-color" content="#0B0B0F">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB STORE<strong>ADMIN</strong></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html">Vue générale</a>
+      <a href="developers.html" class="active">Développeurs</a>
+      <a href="publications.html">Publications</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title">Développeurs</div>
+      <div></div>
+    </div>
+
+    <div class="page">
+      <div class="card">
+        <div class="card-header">
+          <h2>Liste des développeurs</h2>
+          <input type="search" id="searchInput" class="search-input" placeholder="Rechercher par nom, username ou e-mail...">
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Username</th>
+              <th>E-mail</th>
+              <th>Inscrit le</th>
+              <th>Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState" hidden>Aucun développeur trouvé.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  let developers = [];
+  loadDevelopers();
+
+  document.getElementById("searchInput").addEventListener("input", (e) => {
+    render(filterDevelopers(e.target.value));
+  });
+
+  async function loadDevelopers() {
+    try {
+      developers = await WebStoreAdminAPI.getDevelopers();
+      render(developers);
+    } catch (err) {
+      document.getElementById("emptyState").hidden = false;
+      document.getElementById("emptyState").textContent = "Impossible de charger la liste des développeurs.";
+    }
+  }
+
+  function filterDevelopers(value) {
+    const v = value.toLowerCase().trim();
+    if (!v) return developers;
+    return developers.filter(
+      (d) =>
+        d.display_name.toLowerCase().includes(v) ||
+        d.username.toLowerCase().includes(v) ||
+        d.email.toLowerCase().includes(v)
+    );
+  }
+
+  function render(list) {
+    const body = document.getElementById("tableBody");
+    const empty = document.getElementById("emptyState");
+
+    if (list.length === 0) {
+      body.innerHTML = "";
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+
+    body.innerHTML = list
+      .map(
+        (d) => `
+        <tr>
+          <td>${escapeHtml(d.display_name)}</td>
+          <td>${escapeHtml(d.username)}</td>
+          <td>${escapeHtml(d.email)}</td>
+          <td>${new Date(d.created_at).toLocaleDateString("fr-FR")}</td>
+          <td><span class="status-pill status-${d.status}">${statusLabel(d.status)}</span></td>
+          <td><a class="link-action" href="developer-detail.html?id=${d.id}">Voir la fiche</a></td>
+        </tr>`
+      )
+      .join("");
+  }
+
+  function statusLabel(status) {
+    const labels = { ACTIF: "Actif", SUSPENDU: "Suspendu" };
+    return labels[status] || status;
+  }
+
+  function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

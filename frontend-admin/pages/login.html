@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion administration — WEB STORE</title>
+<meta name="theme-color" content="#0B0B0F">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">WEB STORE <strong>ADMINISTRATION</strong></div>
+    <h1>Connexion</h1>
+    <p class="subtitle">Accès réservé à l'équipe d'administration.</p>
+
+    <div id="formMessage"></div>
+
+    <form id="loginForm">
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" required>
+      </div>
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" class="btn" id="submitBtn">Se connecter</button>
+    </form>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script>
+  document.getElementById("loginForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitBtn = document.getElementById("submitBtn");
+    const messageBox = document.getElementById("formMessage");
+    messageBox.innerHTML = "";
+    submitBtn.disabled = true;
+
+    try {
+      await WebStoreAdminAPI.login({
+        email: document.getElementById("email").value.trim(),
+        password: document.getElementById("password").value,
+      });
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      messageBox.innerHTML = `<div class="form-message error">Identifiants invalides.</div>`;
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
