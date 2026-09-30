@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: webstore-backend
+    env: python
+    buildCommand: pip install -r requirements.txt && python manage.py migrate && python manage.py seed_categories
+    startCommand: gunicorn webstore.wsgi:application
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "*"
