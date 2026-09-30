@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WEB STORE — Espace Développeur</title>
+<meta name="theme-color" content="#12291B">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script>
+  window.location.href = WebStoreDevAPI.isAuthenticated()
+    ? "pages/dashboard.html"
+    : "pages/login.html";
+</script>
+</body>
+</html>
