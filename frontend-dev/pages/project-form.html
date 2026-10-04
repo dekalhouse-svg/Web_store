@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projet — WEB STORE Dev</title>
+<meta name="theme-color" content="#12291B">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB<span>STORE</span></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html">Vue générale</a>
+      <a href="projects.html" class="active">Mes projets</a>
+      <a href="messages.html">Messages</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title" id="pageTitle">Ajouter un projet</div>
+      <div></div>
+    </div>
+
+    <div class="page">
+      <div class="card">
+        <div id="formMessage"></div>
+
+        <form id="projectForm" class="form-grid">
+          <div class="field">
+            <label for="name">Nom du projet</label>
+            <input type="text" id="name" required>
+          </div>
+          <div class="field">
+            <label for="description">Description</label>
+            <textarea id="description" rows="4" required></textarea>
+          </div>
+          <div class="field">
+            <label for="url">URL</label>
+            <input type="url" id="url" placeholder="https://" required>
+          </div>
+          <div class="field">
+            <label for="type">Type</label>
+            <select id="type">
+              <option value="WEB">Site Web</option>
+              <option value="PWA">Application PWA</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="category">Catégorie</label>
+            <input type="text" id="category" placeholder="ex : Productivité">
+          </div>
+          <div class="field">
+            <label for="tags">Tags (séparés par des virgules)</label>
+            <input type="text" id="tags" placeholder="ex : outils, gratuit">
+          </div>
+          <div class="field">
+            <label for="icon">Icône du projet</label>
+            <input type="file" id="icon" accept="image/png,image/jpeg,image/webp,image/gif">
+            <small>Image uniquement, 2 Mo maximum. Facultatif.</small>
+            <div id="iconPreview" style="margin-top:10px;"></div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-inline" id="submitBtn">Enregistrer</button>
+            <button type="button" class="btn btn-outline btn-inline" onclick="window.location.href='projects.html'">Annuler</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  const projectId = new URLSearchParams(window.location.search).get("id");
+
+  if (projectId) {
+    document.getElementById("pageTitle").textContent = "Modifier le projet";
+    loadProject();
+  }
+
+  async function loadProject() {
+    try {
+      const project = await WebStoreDevAPI.getProject(projectId);
+      document.getElementById("name").value = project.name || "";
+      document.getElementById("description").value = project.description || "";
+      document.getElementById("url").value = project.url || "";
+      document.getElementById("type").value = project.type || "WEB";
+      document.getElementById("category").value = project.category || "";
+      document.getElementById("tags").value = (project.tags || []).join(", ");
+      if (project.icon_data) {
+        document.getElementById("iconPreview").innerHTML =
+          `<img src="${project.icon_data}" alt="Icône actuelle" style="width:64px;height:64px;border-radius:14px;object-fit:cover;">`;
+      }
+    } catch (err) {
+      document.getElementById("formMessage").innerHTML =
+        `<div class="form-message error">Impossible de charger ce projet.</div>`;
+    }
+  }
+
+  document.getElementById("projectForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitBtn = document.getElementById("submitBtn");
+    const messageBox = document.getElementById("formMessage");
+    messageBox.innerHTML = "";
+    submitBtn.disabled = true;
+
+    const payload = {
+      name: document.getElementById("name").value.trim(),
+      description: document.getElementById("description").value.trim(),
+      url: document.getElementById("url").value.trim(),
+      type: document.getElementById("type").value,
+      category: document.getElementById("category").value.trim(),
+      tags: document.getElementById("tags").value.split(",").map((t) => t.trim()).filter(Boolean),
+    };
+
+    const iconFile = document.getElementById("icon").files[0];
+    if (iconFile) {
+      if (!iconFile.type.startsWith("image/")) {
+        messageBox.innerHTML = `<div class="form-message error">Veuillez sélectionner une image.</div>`;
+        submitBtn.disabled = false;
+        return;
+      }
+      if (iconFile.size > 2 * 1024 * 1024) {
+        messageBox.innerHTML = `<div class="form-message error">L'icône ne doit pas dépasser 2 Mo.</div>`;
+        submitBtn.disabled = false;
+        return;
+      }
+      payload.icon_data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(iconFile);
+      });
+    }
+
+    try {
+      if (projectId) {
+        await WebStoreDevAPI.updateProject(projectId, payload);
+      } else {
+        await WebStoreDevAPI.createProject(payload);
+      }
+      window.location.href = "projects.html";
+    } catch (err) {
+      messageBox.innerHTML = `<div class="form-message error">${err.message}</div>`;
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
