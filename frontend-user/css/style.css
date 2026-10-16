@@ -41,7 +41,28 @@ header {
   top: 0;
   z-index: 20;
 }
+.contact-content {
+    max-width: 600px;
+    margin: 30px auto;
+    padding: 20px;
+    text-align: center;
+    line-height: 1.7;
+}
 
+.whatsapp-btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 14px 22px;
+    background: #25D366;
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 8px;
+}
+
+.whatsapp-btn:hover {
+    background: #1DA851;
+}
 .logo {
   font-size: 21px;
   font-weight: bold;
