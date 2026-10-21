@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#12291B">
+<title>Mon profil - WEB STORE Dev</title>
+<link rel="manifest" href="../manifest.json"><link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+.profile-page{max-width:980px;margin:0 auto}.profile-intro{margin:4px 0 22px;line-height:1.6;color:#64748b}
+.profile-card{margin-bottom:22px;overflow:hidden}.profile-card .card-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid #e5e7eb}
+.profile-card .card-header h2{margin:0;line-height:1.35}.card-body{padding-top:20px}.profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 20px}
+.profile-field{min-width:0}.profile-field label{display:block;margin-bottom:8px;font-weight:600;line-height:1.4}.profile-field input{box-sizing:border-box;width:100%;min-height:44px}
+.profile-field input[readonly]{background:#f3f4f6;color:#475569}.profile-help{margin:7px 0 0;font-size:.88rem;line-height:1.45;color:#64748b}
+.profile-actions{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-top:22px}.profile-actions .btn{min-height:42px}
+.profile-status{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.profile-badge{display:inline-flex;padding:7px 11px;border-radius:999px;background:#f1f5f9;color:#334155;font-size:.9rem}
+.profile-badge.good{background:#dcfce7;color:#166534}.profile-badge.warn{background:#fef3c7;color:#92400e}
+.profile-message{margin-top:14px;padding:12px 14px;border-radius:10px;line-height:1.5}.profile-message:empty{display:none}.profile-message.success{background:#dcfce7;color:#166534}.profile-message.error{background:#fee2e2;color:#991b1b}.profile-message.info{background:#eff6ff;color:#1d4ed8}
+[hidden]{display:none!important}
+@media(max-width:650px){.profile-grid{grid-template-columns:1fr;gap:15px}.profile-card .card-header{align-items:flex-start}.profile-actions{justify-content:stretch}.profile-actions .btn{flex:1 1 100%}}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<aside class="sidebar" id="sidebar"><div class="sidebar-logo">WEB<span>STORE</span></div>
+<nav class="sidebar-nav" aria-label="Navigation principale">
+<a href="dashboard.html">Vue générale</a><a href="projects.html">Mes projets</a><a href="messages.html">Messages</a><a href="profile.html" class="active" aria-current="page">Profil</a>
+</nav><div class="sidebar-footer"><button class="sidebar-logout" id="logoutBtn" type="button">Se déconnecter</button></div></aside>
+<main class="content"><header class="topbar"><button class="menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">☰</button><div class="topbar-title">Mon profil</div><div></div></header>
+<div class="page profile-page">
+<h1>Mon profil</h1><p class="profile-intro">Consultez vos informations de compte et gérez les détails de votre profil depuis cet espace.</p>
+<section class="card profile-card" aria-labelledby="infoTitle">
+<div class="card-header"><div><h2 id="infoTitle">Mes informations</h2><p class="profile-help">Modifiez vos informations personnelles en mode édition.</p></div><button class="btn" id="editBtn" type="button">Modifier mes informations</button></div>
+<div class="card-body"><div id="profileInfo" class="empty-state">Chargement du profil…</div><div id="profileStatus" class="profile-status" hidden></div>
+<form id="profileForm" hidden><div class="profile-grid">
+<div class="profile-field"><label for="full_name">Nom complet</label><input id="full_name" name="full_name" type="text" autocomplete="name" maxlength="150"></div>
+<div class="profile-field"><label for="username">Nom d’utilisateur</label><input id="username" name="username" type="text" autocomplete="username" maxlength="150" readonly><p class="profile-help">Le nom d’utilisateur est en lecture seule.</p></div>
+<div class="profile-field"><label for="email">Adresse e-mail</label><input id="email" name="email" type="email" autocomplete="email" maxlength="254" required></div>
+<div class="profile-field"><label for="phone">Téléphone</label><input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="30"></div>
+</div><div id="profileFormMessage" class="profile-message" role="status" aria-live="polite"></div>
+<div class="profile-actions"><button class="btn" id="cancelEditBtn" type="button">Annuler</button><button class="btn" id="saveProfileBtn" type="submit">Enregistrer les informations</button></div></form>
+</div></section>
+<section class="card profile-card" aria-labelledby="passwordTitle">
+<div class="card-header"><div><h2 id="passwordTitle">Sécurité du compte</h2><p class="profile-help">Le mot de passe se modifie séparément des informations du profil.</p></div><button class="btn" id="togglePasswordBtn" type="button" aria-expanded="false" aria-controls="passwordForm">Changer le mot de passe</button></div>
+<div class="card-body"><form id="passwordForm" hidden><div class="profile-grid">
+<div class="profile-field"><label for="current_password">Mot de passe actuel</label><input id="current_password" type="password" autocomplete="current-password" required></div>
+<div class="profile-field"><label for="new_password">Nouveau mot de passe</label><input id="new_password" type="password" minlength="8" autocomplete="new-password" required><p class="profile-help">8 caractères minimum.</p></div>
+<div class="profile-field"><label for="confirm_password">Confirmer le nouveau mot de passe</label><input id="confirm_password" type="password" minlength="8" autocomplete="new-password" required></div>
+</div><div id="passwordMessage" class="profile-message" role="status" aria-live="polite"></div>
+<div class="profile-actions"><button class="btn" id="cancelPasswordBtn" type="button">Annuler</button><button class="btn" id="savePasswordBtn" type="submit">Enregistrer le mot de passe</button></div></form></div>
+</section></div></main></div>
+<script src="../js/config.js"></script><script src="../js/api.js"></script><script src="../js/auth.js"></script>
+<script>
+const byId=id=>document.getElementById(id);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let currentUser=null;
+function message(el,text,type="info"){el.textContent=text||"";el.className="profile-message"+(text?" "+type:"");}
+function renderProfile(u){
+ byId("profileInfo").className="";
+ byId("profileInfo").innerHTML=`<div class="profile-grid">
+ <div><strong>Nom complet</strong><p>${esc(u.full_name||"Non renseigné")}</p></div>
+ <div><strong>Nom d’utilisateur</strong><p>${esc(u.username||"Non renseigné")}</p></div>
+ <div><strong>Adresse e-mail</strong><p>${esc(u.email||"Non renseignée")}</p></div>
+ <div><strong>Téléphone</strong><p>${esc(u.phone||"Non renseigné")}</p></div></div>`;
+ byId("profileStatus").hidden=false;
+ byId("profileStatus").innerHTML=`<span class="profile-badge">Statut : ${esc(u.status||"Non renseigné")}</span><span class="profile-badge ${u.email_verified?"good":"warn"}">E-mail : ${u.email_verified?"vérifié":"non vérifié"}</span>`;
+}
+function fillForm(u){byId("full_name").value=u.full_name||"";byId("username").value=u.username||"";byId("email").value=u.email||"";byId("phone").value=u.phone||"";}
+function closeEditor(){byId("profileForm").hidden=true;byId("profileInfo").hidden=false;byId("profileStatus").hidden=false;byId("editBtn").hidden=false;message(byId("profileFormMessage"),"");}
+byId("editBtn").addEventListener("click",()=>{fillForm(currentUser||{});byId("profileInfo").hidden=true;byId("profileStatus").hidden=true;byId("profileForm").hidden=false;byId("editBtn").hidden=true;message(byId("profileFormMessage"),"");});
+byId("cancelEditBtn").addEventListener("click",closeEditor);
+byId("profileForm").addEventListener("submit",async e=>{
+ e.preventDefault();const save=byId("saveProfileBtn");
+ const payload={full_name:byId("full_name").value.trim(),email:byId("email").value.trim(),phone:byId("phone").value.trim()};
+ const update=WebStoreDevAPI.updateMe||WebStoreDevAPI.updateProfile;
+ if(typeof update!=="function"){message(byId("profileFormMessage"),"La page permet de modifier les champs, mais l’API actuelle ne fournit pas de fonction de mise à jour du profil. Rien n’a été enregistré. Il faudra ajouter cette fonction côté API/backend.","error");return;}
+ save.disabled=true;message(byId("profileFormMessage"),"Enregistrement en cours…");
+ try{await update.call(WebStoreDevAPI,payload);currentUser=await WebStoreDevAPI.getMe();renderProfile(currentUser);closeEditor();}
+ catch(err){message(byId("profileFormMessage"),err.message||"Impossible d’enregistrer les informations.","error");}
+ finally{save.disabled=false;}
+});
+byId("togglePasswordBtn").addEventListener("click",()=>{const f=byId("passwordForm");f.hidden=!f.hidden;byId("togglePasswordBtn").setAttribute("aria-expanded",String(!f.hidden));if(!f.hidden)f.scrollIntoView({behavior:"smooth",block:"start"});message(byId("passwordMessage"),"");});
+byId("cancelPasswordBtn").addEventListener("click",()=>{byId("passwordForm").reset();byId("passwordForm").hidden=true;byId("togglePasswordBtn").setAttribute("aria-expanded","false");message(byId("passwordMessage"),"");});
+byId("passwordForm").addEventListener("submit",async e=>{
+ e.preventDefault();const button=byId("savePasswordBtn"),newPass=byId("new_password").value;
+ if(newPass!==byId("confirm_password").value){message(byId("passwordMessage"),"Les deux nouveaux mots de passe ne correspondent pas.","error");return;}
+ button.disabled=true;message(byId("passwordMessage"),"Modification du mot de passe en cours…");
+ try{const result=await WebStoreDevAPI.changePassword({current_password:byId("current_password").value,new_password:newPass,confirm_password:byId("confirm_password").value});message(byId("passwordMessage"),result.message||"Mot de passe modifié. Déconnexion en cours.","success");byId("passwordForm").reset();WebStoreDevAPI.logout();setTimeout(()=>location.href="login.html",1300);}
+ catch(err){message(byId("passwordMessage"),err.message||"Impossible de modifier le mot de passe.","error");button.disabled=false;}
+});
+(async()=>{try{currentUser=await WebStoreDevAPI.getMe();renderProfile(currentUser);}catch(err){byId("profileInfo").textContent="Impossible de charger le profil : "+(err.message||"erreur inconnue");}})();
+</script>
+</body></html>
