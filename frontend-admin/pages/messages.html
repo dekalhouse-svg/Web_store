@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0B0B0F">
+  <title>Messages | WEB STORE Admin</title>
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" href="../icons/icon-192.png">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    /* Styles de la messagerie gardés dans ce fichier pour limiter les changements. */
+    .msg-page{max-width:1250px}
+    .msg-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+    .msg-heading h1{font-size:24px;line-height:1.2;margin:0 0 7px}
+    .msg-heading p{margin:0;color:var(--color-text-muted);font-size:13px}
+    .msg-new-btn,.msg-primary,.msg-secondary,.msg-tab{border:1px solid var(--color-border);border-radius:9px;padding:10px 14px;font:inherit;font-size:13px;cursor:pointer;transition:background .15s,border-color .15s}
+    .msg-new-btn,.msg-primary{background:var(--color-accent);border-color:var(--color-accent);color:#fff;font-weight:650}
+    .msg-new-btn:hover,.msg-primary:hover{filter:brightness(1.08)}
+    .msg-secondary,.msg-tab{background:var(--color-surface-alt);color:var(--color-text)}
+    .msg-secondary:hover,.msg-tab:hover{border-color:var(--color-accent)}
+    .msg-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+    .msg-tabs{display:flex;gap:7px;flex-wrap:wrap}
+    .msg-tab.active{background:var(--color-accent-soft);border-color:var(--color-accent);color:var(--color-text);font-weight:700}
+    .msg-tab .msg-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;margin-left:5px;border-radius:20px;background:#dc2626;color:#fff;font-size:10px;font-weight:800}
+    .msg-status{min-height:20px;margin:0 0 12px;color:var(--color-text-muted);font-size:12px}
+    .msg-status.error{color:#f87171}.msg-status.success{color:#4ade80}
+    .msg-layout{display:grid;grid-template-columns:minmax(250px,.82fr) minmax(0,1.5fr);gap:16px;align-items:start}
+    .msg-card{min-width:0;background:var(--color-surface);border:1px solid var(--color-border);border-radius:15px;overflow:hidden}
+    .msg-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 17px;border-bottom:1px solid var(--color-border)}
+    .msg-card-head h2{font-size:14px;margin:0}
+    .msg-subtitle{font-size:11px;color:var(--color-text-muted)}
+    .msg-list{max-height:650px;overflow:auto}
+    .msg-row{width:100%;display:block;text-align:left;padding:15px 16px;border:0;border-bottom:1px solid var(--color-border);border-left:3px solid transparent;background:transparent;color:var(--color-text);cursor:pointer}
+    .msg-row:last-child{border-bottom:0}.msg-row:hover{background:var(--color-surface-alt)}
+    .msg-row.active{background:var(--color-accent-soft);border-left-color:var(--color-accent)}
+    .msg-row.unread .msg-row-subject{font-weight:800}.msg-row-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .msg-row-subject{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+    .msg-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#ef4444}
+    .msg-row-person{display:block;font-size:12px;margin-top:7px;color:var(--color-text-muted);overflow-wrap:anywhere}
+    .msg-row-date{display:block;font-size:10px;color:var(--color-text-muted);margin-top:6px}
+    .msg-empty{padding:35px 18px;text-align:center;color:var(--color-text-muted);font-size:13px;line-height:1.6}
+    .msg-detail{padding:20px;min-height:350px}
+    .msg-detail-placeholder{min-height:300px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--color-text-muted);font-size:13px;padding:25px}
+    .msg-detail-title{font-size:20px;line-height:1.35;overflow-wrap:anywhere;margin:0 0 14px}
+    .msg-meta{display:flex;flex-wrap:wrap;gap:7px 14px;color:var(--color-text-muted);font-size:11px;padding-bottom:16px;border-bottom:1px solid var(--color-border)}
+    .msg-content{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;font-size:14px;padding:20px 0;min-height:120px}
+    .msg-pill{display:inline-flex;align-items:center;padding:4px 8px;border-radius:20px;background:var(--color-surface-alt);color:var(--color-text-muted);font-size:10px;font-weight:700}
+    .msg-pill.unread{background:rgba(220,38,38,.14);color:#f87171}
+    .msg-form-wrap{margin-top:16px;padding:18px;border:1px solid var(--color-border);border-radius:13px;background:var(--color-surface)}
+    .msg-form-wrap[hidden],.msg-detail[hidden],.msg-compose-card[hidden]{display:none!important}
+    .msg-form-wrap h3{font-size:14px;margin:0 0 14px}
+    .msg-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+    .msg-field{min-width:0;margin-bottom:13px}.msg-field.full{grid-column:1/-1}
+    .msg-field label{display:block;font-size:12px;color:var(--color-text-muted);margin-bottom:7px}
+    .msg-field input,.msg-field select,.msg-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--color-border);border-radius:9px;background:var(--color-surface-alt);color:var(--color-text);padding:11px 12px;font:inherit;font-size:13px;outline:none}
+    .msg-field input:focus,.msg-field select:focus,.msg-field textarea:focus{border-color:var(--color-accent)}
+    .msg-field textarea{min-height:135px;resize:vertical;line-height:1.6}
+    .msg-form-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .msg-form-hint{font-size:11px;color:var(--color-text-muted);margin:8px 0 0}
+    .msg-primary:disabled,.msg-secondary:disabled{opacity:.55;cursor:wait}
+    @media(max-width:850px){.msg-layout{grid-template-columns:minmax(0,1fr)}.msg-list{max-height:330px}.msg-detail{min-height:0}.msg-detail-placeholder{min-height:180px}}
+    @media(max-width:520px){.msg-heading h1{font-size:21px}.msg-detail{padding:16px}.msg-form-grid{grid-template-columns:1fr}.msg-field.full{grid-column:auto}.msg-toolbar{align-items:stretch}.msg-tabs{width:100%}.msg-tab{flex:1;padding:9px 8px}.msg-new-btn{width:100%}}
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB STORE<strong>ADMIN</strong></div>
+    <nav class="sidebar-nav" aria-label="Navigation principale">
+      <a href="dashboard.html">Vue générale</a>
+      <a href="developers.html">Développeurs</a>
+      <a href="publications.html">Publications</a>
+      <a href="messages.html" data-webstore-messages="admin" class="active">Messages</a>
+      <a href="profile.html">Profil</a>
+    </nav>
+    <div class="sidebar-footer"><button class="sidebar-logout" id="logoutBtn" type="button">Se déconnecter</button></div>
+  </aside>
+  <div class="content">
+    <header class="topbar"><button class="menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">☰</button><div class="topbar-title">Messagerie</div><div></div></header>
+    <main class="page msg-page">
+      <div class="msg-heading"><div><h1>Messages</h1><p>Consultez les échanges avec les développeurs et gérez vos réponses.</p></div><button class="msg-new-btn" id="newMessageBtn" type="button">＋ Nouveau message</button></div>
+      <section class="msg-compose-card msg-form-wrap" id="composeCard" hidden>
+        <h3>Rédiger un message</h3>
+        <form id="composeForm">
+          <div class="msg-form-grid">
+            <div class="msg-field"><label for="recipient">Destinataire</label><select id="recipient" required><option value="all">Tous les développeurs actifs</option></select></div>
+            <div class="msg-field"><label for="composeSubject">Sujet</label><input id="composeSubject" maxlength="200" required placeholder="Sujet du message"></div>
+            <div class="msg-field full"><label for="composeContent">Message</label><textarea id="composeContent" maxlength="10000" required placeholder="Écrivez votre message..."></textarea><p class="msg-form-hint">Le message peut être envoyé à tous les développeurs actifs ou à une personne précise.</p></div>
+          </div>
+          <div class="msg-form-actions"><button class="msg-primary" id="sendComposeBtn" type="submit">Envoyer le message</button><button class="msg-secondary" id="cancelComposeBtn" type="button">Annuler</button></div>
+        </form>
+      </section>
+      <div class="msg-toolbar"><div class="msg-tabs" role="tablist" aria-label="Dossiers de messages"><button class="msg-tab active" id="inboxTab" type="button" role="tab" aria-selected="true">Réception <span id="unreadCount" class="msg-tab-count" hidden>0</span></button><button class="msg-tab" id="sentTab" type="button" role="tab" aria-selected="false">Envoyés</button></div><button class="msg-secondary" id="refreshBtn" type="button">↻ Actualiser</button></div>
+      <p id="status" class="msg-status" role="status" aria-live="polite"></p>
+      <div class="msg-layout">
+        <section class="msg-card" aria-label="Liste des messages"><div class="msg-card-head"><h2 id="listTitle">Boîte de réception</h2><span class="msg-subtitle" id="listCount"></span></div><div id="messageList" class="msg-list"><div class="msg-empty">Chargement des messages…</div></div></section>
+        <section class="msg-card" aria-label="Message sélectionné"><div id="detailPlaceholder" class="msg-detail-placeholder">Sélectionnez un message dans la liste pour afficher son contenu.</div><div id="detailPanel" class="msg-detail" hidden><div class="msg-row-top"><span class="msg-pill" id="readPill">Message</span><span class="msg-subtitle" id="detailDate"></span></div><h2 id="detailSubject" class="msg-detail-title"></h2><div id="detailMeta" class="msg-meta"></div><div id="detailContent" class="msg-content"></div><form id="replyForm" class="msg-form-wrap" hidden><h3>Répondre à ce message</h3><div class="msg-field"><label for="replyContent">Votre réponse</label><textarea id="replyContent" maxlength="10000" required placeholder="Écrivez votre réponse..."></textarea></div><div class="msg-form-actions"><button class="msg-primary" id="replyBtn" type="submit">Envoyer la réponse</button></div></form></div></section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+(() => {
+  "use strict";
+  let box = "inbox", selectedId = null, messages = [], developers = [], loadSequence = 0;
+  const $ = id => document.getElementById(id);
+  const setStatus = (text, kind = "") => { const el = $("status"); el.textContent = text || ""; el.className = "msg-status" + (kind ? " " + kind : ""); };
+  const fmt = value => { if (!value) return "Date inconnue"; const d = new Date(value); return Number.isNaN(d.getTime()) ? "Date inconnue" : d.toLocaleString("fr-FR", {dateStyle:"medium", timeStyle:"short"}); };
+  const text = (el, value) => { el.textContent = value == null ? "" : String(value); };
+  function renderUnread() {
+    const count = messages.filter(m => !m.read).length;
+    const badge = $("unreadCount"); badge.textContent = count > 99 ? "99+" : String(count); badge.hidden = box !== "inbox" || count === 0;
+    $("inboxTab").setAttribute("aria-label", count ? `Réception, ${count} message(s) non lu(s)` : "Réception");
+  }
+  function renderList() {
+    const list = $("messageList"); list.replaceChildren();
+    $("listCount").textContent = `${messages.length} message${messages.length === 1 ? "" : "s"}`;
+    renderUnread();
+    if (!messages.length) { const empty = document.createElement("div"); empty.className = "msg-empty"; empty.textContent = box === "inbox" ? "Votre boîte de réception est vide." : "Vous n'avez pas encore envoyé de message."; list.appendChild(empty); return; }
+    for (const m of messages) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "msg-row" + (box === "inbox" && !m.read ? " unread" : "") + (String(m.id) === String(selectedId) ? " active" : "");
+      b.setAttribute("aria-current", String(m.id) === String(selectedId) ? "true" : "false");
+      const top = document.createElement("span"); top.className = "msg-row-top";
+      const subject = document.createElement("span"); subject.className = "msg-row-subject"; subject.textContent = m.subject || "(Sans sujet)"; top.appendChild(subject);
+      if (box === "inbox" && !m.read) { const dot = document.createElement("span"); dot.className = "msg-dot"; dot.setAttribute("aria-label", "Non lu"); top.appendChild(dot); }
+      const person = document.createElement("span"); person.className = "msg-row-person"; person.textContent = box === "inbox" ? (m.sender_name || "Expéditeur") : (m.recipient_name || "Destinataire");
+      const date = document.createElement("span"); date.className = "msg-row-date"; date.textContent = fmt(m.created_at);
+      b.append(top, person, date); b.addEventListener("click", () => openMessage(m.id)); list.appendChild(b);
+    }
+  }
+  async function loadMessages({keepSelection = true} = {}) {
+    const seq = ++loadSequence;
+    $("messageList").innerHTML = '<div class="msg-empty">Chargement des messages…</div>';
+    try {
+      const result = await WebStoreAdminAPI.getMessages(box);
+      if (seq !== loadSequence) return;
+      if (!Array.isArray(result)) throw new Error("Format de réponse inattendu pour les messages.");
+      messages = result;
+      if (!keepSelection || !messages.some(m => String(m.id) === String(selectedId))) selectedId = null;
+      renderList();
+      if (selectedId !== null) {
+        const selected = messages.find(m => String(m.id) === String(selectedId));
+        if (selected) { const row = [...$("messageList").querySelectorAll(".msg-row")].find(el => el.getAttribute("aria-current") === "true"); if (!row) await openMessage(selected.id, {reloadAfterRead:false}); }
+        else resetDetail();
+      } else if (!$("detailPanel").hidden && !keepSelection) resetDetail();
+      setStatus(messages.length ? "Messages actualisés." : (box === "inbox" ? "Aucun message reçu." : "Aucun message envoyé."));
+    } catch (e) {
+      if (seq !== loadSequence) return;
+      $("messageList").replaceChildren(); const err = document.createElement("div"); err.className = "msg-empty"; err.textContent = "Impossible de charger les messages. Vérifiez la connexion et réessayez."; $("messageList").appendChild(err); setStatus(e.message || "Erreur de chargement.", "error");
+    }
+  }
+  function resetDetail() {
+    selectedId = null; $("detailPanel").hidden = true; $("detailPlaceholder").hidden = false; $("replyForm").hidden = true;
+    text($("detailSubject"), ""); text($("detailMeta"), ""); text($("detailContent"), ""); text($("detailDate"), "");
+    for (const b of $("messageList").querySelectorAll(".msg-row")) { b.classList.remove("active"); b.setAttribute("aria-current", "false"); }
+  }
+  async function openMessage(id, {reloadAfterRead = true} = {}) {
+    selectedId = id; renderList();
+    try {
+      const m = await WebStoreAdminAPI.getMessage(id);
+      // Vérifie que la sélection n'a pas changé pendant la requête.
+      if (String(selectedId) !== String(id)) return;
+      $("detailPlaceholder").hidden = true; $("detailPanel").hidden = false;
+      text($("detailSubject"), m.subject || "(Sans sujet)"); text($("detailDate"), fmt(m.created_at)); text($("detailContent"), m.content || "");
+      const otherName = box === "inbox" ? (m.sender_name || "Expéditeur") : (m.recipient_name || "Destinataire");
+      const otherEmail = box === "inbox" ? (m.sender_email || "") : (m.recipient_email || "");
+      $("detailMeta").replaceChildren();
+      const who = document.createElement("span"); who.textContent = `${box === "inbox" ? "De" : "À"} : ${otherName}${otherEmail ? " · " + otherEmail : ""}`;
+      const state = document.createElement("span"); state.className = "msg-pill" + (box === "inbox" && !m.read ? " unread" : ""); state.textContent = box === "inbox" ? (m.read ? "Lu" : "Non lu") : "Envoyé";
+      $("detailMeta").append(who, state);
+      $("readPill").textContent = box === "inbox" ? "Message reçu" : "Message envoyé";
+      $("replyForm").hidden = box !== "inbox"; $("replyContent").value = "";
+      if (box === "inbox" && !m.read) {
+        await WebStoreAdminAPI.markMessageRead(id);
+        if (String(selectedId) !== String(id)) return;
+        const local = messages.find(x => String(x.id) === String(id)); if (local) local.read = true;
+        renderList(); state.textContent = "Lu"; state.classList.remove("unread");
+        if (reloadAfterRead) refreshUnreadCount();
+      }
+      setStatus("Message ouvert.");
+    } catch (e) { setStatus(e.message || "Impossible d'ouvrir ce message.", "error"); }
+  }
+  async function refreshUnreadCount() {
+    try {
+      const result = await WebStoreAdminAPI.getMessages("inbox");
+      if (!Array.isArray(result)) return;
+      const count = result.filter(m => !m.read).length; const badge = $("unreadCount"); badge.textContent = count > 99 ? "99+" : String(count); badge.hidden = count === 0 || box !== "inbox";
+    } catch (_) { /* Le compteur sera réessayé à la prochaine actualisation. */ }
+  }
+  async function loadDevelopers() {
+    try {
+      const result = await WebStoreAdminAPI.getDevelopers();
+      developers = Array.isArray(result) ? result : [];
+      const select = $("recipient");
+      for (const d of developers) {
+        if (d.status && d.status !== "ACTIF") continue;
+        const option = document.createElement("option"); option.value = String(d.id); option.textContent = `${d.display_name || d.full_name || d.username || "Développeur"}${d.email ? " · " + d.email : ""}`; select.appendChild(option);
+      }
+    } catch (_) { setStatus("La liste des développeurs n'a pas pu être chargée. Vous pouvez toujours consulter vos messages.", "error"); }
+  }
+  function selectBox(next) {
+    box = next; selectedId = null;
+    $("inboxTab").classList.toggle("active", box === "inbox"); $("sentTab").classList.toggle("active", box === "sent");
+    $("inboxTab").setAttribute("aria-selected", String(box === "inbox")); $("sentTab").setAttribute("aria-selected", String(box === "sent"));
+    text($("listTitle"), box === "inbox" ? "Boîte de réception" : "Messages envoyés"); resetDetail(); loadMessages({keepSelection:false});
+  }
+  $("inboxTab").addEventListener("click", () => selectBox("inbox"));
+  $("sentTab").addEventListener("click", () => selectBox("sent"));
+  $("refreshBtn").addEventListener("click", () => loadMessages());
+  $("newMessageBtn").addEventListener("click", () => { $("composeCard").hidden = !$("composeCard").hidden; if (!$("composeCard").hidden) $("composeSubject").focus(); });
+  $("cancelComposeBtn").addEventListener("click", () => { $("composeCard").hidden = true; $("composeForm").reset(); });
+  $("composeForm").addEventListener("submit", async e => {
+    e.preventDefault(); const subject = $("composeSubject").value.trim(), content = $("composeContent").value.trim(), recipient = $("recipient").value;
+    if (!subject || !content) { setStatus("Le sujet et le contenu sont obligatoires.", "error"); return; }
+    const btn = $("sendComposeBtn"); btn.disabled = true; text(btn, "Envoi en cours…");
+    try {
+      if (recipient === "all") {
+        if (!window.confirm("Envoyer ce message à tous les développeurs actifs ?")) return;
+        await WebStoreAdminAPI.sendMessageToAllDevelopers({subject, content});
+      } else {
+        await WebStoreAdminAPI.sendMessageToDeveloper(recipient, {subject, content});
+      }
+      $("composeForm").reset(); $("composeCard").hidden = true; setStatus("Message envoyé avec succès.", "success"); selectBox("sent");
+    } catch (err) { setStatus(err.message || "Échec de l'envoi du message.", "error"); }
+    finally { btn.disabled = false; text(btn, "Envoyer le message"); }
+  });
+  $("replyForm").addEventListener("submit", async e => {
+    e.preventDefault(); const content = $("replyContent").value.trim(); if (!content || selectedId === null) return;
+    const btn = $("replyBtn"); btn.disabled = true; text(btn, "Envoi en cours…");
+    try { await WebStoreAdminAPI.replyToMessage(selectedId, content); $("replyContent").value = ""; setStatus("Réponse envoyée.", "success"); await loadMessages(); }
+    catch (err) { setStatus(err.message || "Échec de l'envoi de la réponse.", "error"); }
+    finally { btn.disabled = false; text(btn, "Envoyer la réponse"); }
+  });
+  loadDevelopers(); loadMessages(); window.setInterval(refreshUnreadCount, 30000);
+})();
+</script>
+</body>
+</html>
