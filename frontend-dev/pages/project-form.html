@@ -115,7 +115,7 @@
       });
       if (select.options.length <= 1) throw new Error("Aucune catégorie valide disponible.");
       select.disabled = false;
-      help.textContent = "Choisissez une catégorie parmi celles disponibles sur WEB STORE.";
+      help.textContent = "";
     } catch (error) {
       select.replaceChildren(new Option("Catégories indisponibles", ""));
       select.disabled = true;
