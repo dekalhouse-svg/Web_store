@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <title>Chargement — WEB STORE</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      color: #202b24;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 46px;
+      height: 46px;
+      border: 4px solid #dcfce7;
+      border-top-color: #16a34a;
+      border-radius: 50%;
+      transform: rotate(0deg);
+      will-change: transform;
+    }
+
+    .brand {
+      margin-top: 25px;
+      font-size: 23px;
+      font-weight: 750;
+      letter-spacing: 0.5px;
+    }
+
+    .brand span {
+      color: #16a34a;
+    }
+
+    .message {
+      margin-top: 10px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .spinner {
+        opacity: 0.8;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="loader" role="status" aria-live="polite">
+    <div class="spinner" id="loadingSpinner" aria-hidden="true"></div>
+    <div class="brand">WEB<span>STORE</span></div>
+    <div class="message" id="loadingMessage">Chargement…</div>
+  </main>
+
+  <script>
+    (function () {
+      const spinner = document.getElementById("loadingSpinner");
+      const message = document.getElementById("loadingMessage");
+
+      if (!spinner || !message) return;
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let angle = 0;
+      let previousTime = 0;
+      let animationFrame = null;
+
+      function rotateSpinner(timestamp) {
+        if (!previousTime) previousTime = timestamp;
+
+        const elapsed = timestamp - previousTime;
+        previousTime = timestamp;
+
+        // Rotation régulière, indépendante de la fréquence d'affichage.
+        angle = (angle + elapsed * (reduceMotion ? 0.12 : 0.45)) % 360;
+        spinner.style.transform = `rotate(${angle}deg)`;
+
+        animationFrame = window.requestAnimationFrame(rotateSpinner);
+      }
+
+      function startAnimation() {
+        if (animationFrame === null) {
+          previousTime = 0;
+          animationFrame = window.requestAnimationFrame(rotateSpinner);
+        }
+      }
+
+      function stopAnimation() {
+        if (animationFrame !== null) {
+          window.cancelAnimationFrame(animationFrame);
+          animationFrame = null;
+        }
+      }
+
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+          stopAnimation();
+        } else {
+          startAnimation();
+        }
+      });
+
+      window.addEventListener("pagehide", stopAnimation, { once: true });
+      startAnimation();
+    })();
+  </script>
+</body>
+</html>
