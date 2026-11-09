@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiche projet — WEB STORE</title>
+<meta name="theme-color" content="#16A34A">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  #webstoreLoadingFrame { position:fixed; inset:0; width:100%; height:100%; border:0; z-index:99999; background:#fff; opacity:1; visibility:visible; transition:opacity .35s ease, visibility .35s ease; }
+  #webstoreLoadingFrame.is-hidden { opacity:0; visibility:hidden; pointer-events:none; }
+</style>
+
+<style>
+  .sheet { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 15px; padding: 20px; margin-bottom: 24px; }
+  .sheet-top { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .sheet-icon { width: 72px; height: 72px; border-radius: 16px; background: var(--color-primary-soft); color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; flex: none; overflow: hidden; }
+  .sheet-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .comment { border-bottom: 1px solid var(--color-border); padding: 12px 0; font-size: 13px; }
+  .comment strong { display: block; margin-bottom: 4px; }
+  .comment-content { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .comment-actions { display: flex; gap: 8px; margin-top: 9px; }
+  .comment-actions button { border: 1px solid var(--color-border); border-radius: 7px; padding: 6px 10px; background: var(--color-surface); color: var(--color-text); font-size: 12px; cursor: pointer; }
+  .comment-actions .delete-comment { color: #dc2626; }
+  .comment-form { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .comment-form input, .comment-form textarea {
+    border: 1px solid var(--color-border); border-radius: 9px; padding: 10px 12px; font-size: 13px; font-family: inherit;
+  }
+  .report-link { font-size: 11px; color: var(--color-text-muted); background: none; border: none; text-decoration: underline; cursor: pointer; margin-top: 10px; }
+</style>
+</head>
+<body>
+<iframe id="webstoreLoadingFrame" src="../animation.html" title="Chargement de WEB STORE" aria-hidden="true" tabindex="-1"></iframe>
+<script>
+  (function () {
+    const frame = document.getElementById("webstoreLoadingFrame");
+    let hidden = false;
+    function hideLoader() {
+      if (hidden) return;
+      hidden = true;
+      frame.classList.add("is-hidden");
+      window.setTimeout(() => frame.remove(), 400);
+    }
+    window.addEventListener("webstore:content-ready", hideLoader, { once: true });
+    window.setTimeout(hideLoader, 15000);
+  })();
+</script>
+
+
+<header>
+  <div class="logo">WEB<span>STORE</span></div>
+  <nav class="menu active" style="position: static; display: flex; border: none; padding: 0;">
+    <a href="../index.html">← Retour au catalogue</a>
+  </nav>
+</header>
+
+<main>
+
+  <section class="sheet" id="projectSheet">
+    <p>Chargement…</p>
+  </section>
+
+  <section class="section" id="commentsSection" hidden>
+    <div class="section-header">
+      <h2>Commentaires</h2>
+    </div>
+    <div id="commentList"></div>
+
+    <form class="comment-form" id="commentForm">
+      <input type="text" id="authorName" placeholder="Votre nom ou pseudonyme" maxlength="60" required>
+      <textarea id="commentContent" placeholder="Votre commentaire" maxlength="500" rows="3" required></textarea>
+      <button type="submit" class="button-primary">Publier le commentaire</button>
+    </form>
+  </section>
+
+</main>
+
+<footer>
+  WEB STORE
+  <br><br>
+  by <strong>DEKAL HOUSE</strong>
+</footer>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script>WebStoreAPI.trackVisitor().catch(() => {});</script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get("slug");
+
+  document.addEventListener("DOMContentLoaded", () => {
+    if (!slug) {
+      renderError("Projet introuvable.");
+      window.dispatchEvent(new Event("webstore:content-ready"));
+      return;
+    }
+    loadProject();
+  });
+
+  async function loadProject(trackView = true) {
+    try {
+      const project = await WebStoreAPI.getProject(slug);
+      renderProject(project);
+      // Visite de la fiche = un événement, comptabilisé côté backend.
+      if (trackView) WebStoreAPI.trackEvent(slug, "view");
+      loadComments(project.comments || []);
+    } catch (err) {
+      renderError("Impossible de charger ce projet pour le moment.");
+    } finally {
+      window.dispatchEvent(new Event("webstore:content-ready"));
+    }
+  }
+
+  function renderProject(project) {
+    const sheet = document.getElementById("projectSheet");
+    const initials = project.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+
+    const icon = project.icon_data
+      ? `<img src="${escapeHtml(project.icon_data)}" alt="Icône de ${escapeHtml(project.name)}">`
+      : initials;
+
+    sheet.innerHTML = `
+      <div class="sheet-top">
+        <div class="sheet-icon">${icon}</div>
+        <div>
+          <h1 style="font-size:20px;">${escapeHtml(project.name)}</h1>
+          <span class="badge ${project.type === "PWA" ? "pwa" : "web"}">${escapeHtml(project.type === "PWA" ? "PWA" : "WEB")}</span>
+        </div>
+      </div>
+      <p style="color: var(--color-text-muted); font-size: 14px; line-height: 1.6;">
+        ${escapeHtml(project.description || "")}
+      </p>
+      <div class="sheet-actions">
+        <button class="button-primary" id="visitBtn">Visiter le site</button>
+        ${project.type === "PWA" ? '<button class="button-secondary" id="installBtn">Installer</button>' : ''}
+      </div>
+      <button class="report-link" id="reportBtn">Signaler cette publication</button>
+    `;
+
+    document.getElementById("visitBtn").addEventListener("click", () => {
+      WebStoreAPI.trackEvent(slug, "visit_click");
+      const safeUrl = safeExternalUrl(project.url);
+      if (!safeUrl) {
+        alert("L'adresse de ce projet n'est pas valide.");
+        return;
+      }
+      window.open(safeUrl, "_blank", "noopener,noreferrer");
+    });
+
+    const installBtn = document.getElementById("installBtn");
+    if (installBtn) {
+      installBtn.addEventListener("click", () => {
+        // Les navigateurs interdisent à WEB STORE de déclencher directement
+        // l'installation d'une PWA hébergée sur une autre origine.
+        // Ouvrir sa propre origine permet au navigateur de proposer l'installation.
+        WebStoreAPI.trackEvent(slug, "install");
+        alert("La page de cette PWA va s’ouvrir. Dans le navigateur, choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil » si cette option est proposée.");
+        const safeUrl = safeExternalUrl(project.url);
+        if (!safeUrl) {
+          alert("L'adresse de cette PWA n'est pas valide.");
+          return;
+        }
+        window.open(safeUrl, "_blank", "noopener,noreferrer");
+      });
+    }
+
+    document.getElementById("reportBtn").addEventListener("click", openReportDialog);
+
+    document.getElementById("commentsSection").hidden = false;
+  }
+
+  function renderError(message) {
+    document.getElementById("projectSheet").innerHTML = `<p>${escapeHtml(message)}</p>`;
+  }
+
+  function commentTokenKey(commentId) {
+    return `webstore_comment_token:${slug}:${commentId}`;
+  }
+
+  function loadComments(comments) {
+    const list = document.getElementById("commentList");
+    list.replaceChildren();
+    if (!comments.length) {
+      const empty = document.createElement("p");
+      empty.style.color = "var(--color-text-muted)";
+      empty.style.fontSize = "13px";
+      empty.textContent = "Aucun commentaire pour le moment.";
+      list.appendChild(empty);
+      return;
+    }
+
+    comments.forEach((comment) => {
+      const item = document.createElement("div");
+      item.className = "comment";
+      const author = document.createElement("strong");
+      author.textContent = comment.author_name;
+      const content = document.createElement("div");
+      content.className = "comment-content";
+      content.textContent = comment.content;
+      item.append(author, content);
+
+      let token = "";
+      try { token = localStorage.getItem(commentTokenKey(comment.id)) || ""; } catch (_) {}
+      if (token) {
+        const actions = document.createElement("div");
+        actions.className = "comment-actions";
+
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.textContent = "Modifier";
+        edit.addEventListener("click", async () => {
+          const nextName = prompt("Modifier votre nom ou pseudonyme :", comment.author_name);
+          if (nextName === null) return;
+          const nextContent = prompt("Modifier votre commentaire :", comment.content);
+          if (nextContent === null) return;
+          if (!nextName.trim() || !nextContent.trim()) {
+            alert("Le nom et le commentaire ne peuvent pas être vides.");
+            return;
+          }
+          if (nextName.trim().length > 100 || nextContent.trim().length > 2000) {
+            alert("Le nom est limité à 100 caractères et le commentaire à 2 000 caractères.");
+            return;
+          }
+          try {
+            await WebStoreAPI.updateComment(slug, comment.id, token, {
+              author_name: nextName.trim(), content: nextContent.trim()
+            });
+            await loadProject(false);
+          } catch (_) {
+            alert("Impossible de modifier ce commentaire. Utilisez le navigateur depuis lequel vous l'avez publié.");
+          }
+        });
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "delete-comment";
+        remove.textContent = "Supprimer";
+        remove.addEventListener("click", async () => {
+          if (!confirm("Voulez-vous vraiment supprimer votre commentaire ?")) return;
+          try {
+            await WebStoreAPI.deleteComment(slug, comment.id, token);
+            try { localStorage.removeItem(commentTokenKey(comment.id)); } catch (_) {}
+            await loadProject(false);
+          } catch (_) {
+            alert("Impossible de supprimer ce commentaire. Utilisez le navigateur depuis lequel vous l'avez publié.");
+          }
+        });
+        actions.append(edit, remove);
+        item.appendChild(actions);
+      }
+      list.appendChild(item);
+    });
+  }
+
+  document.getElementById("commentForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const authorName = document.getElementById("authorName").value.trim();
+    const content = document.getElementById("commentContent").value.trim();
+    if (!authorName || !content) return;
+
+    try {
+      const created = await WebStoreAPI.postComment(slug, { author_name: authorName, content });
+      if (created?.manage_token && created?.id) {
+        try { localStorage.setItem(commentTokenKey(created.id), created.manage_token); } catch (_) {}
+      }
+      document.getElementById("commentForm").reset();
+      await loadProject(false);
+    } catch (err) {
+      alert("Impossible d'envoyer le commentaire pour le moment.");
+    }
+  });
+
+  function openReportDialog() {
+    const reason = prompt("Pourquoi signalez-vous cette publication ?");
+    if (!reason) return;
+    WebStoreAPI.postReport(slug, { reason, description: "" })
+      .then(() => alert("Merci, votre signalement a été transmis à l'administration."))
+      .catch(() => alert("Impossible d'envoyer le signalement pour le moment."));
+  }
+
+  function safeExternalUrl(value) {
+    try {
+      const url = new URL(String(value || ""));
+      return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>
