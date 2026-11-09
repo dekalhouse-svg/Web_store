@@ -50,8 +50,8 @@
 
     try {
       await WebStoreDevAPI.verifyEmail({ email, code: document.getElementById("code").value.trim() });
-      messageBox.innerHTML = `<div class="form-message success">E-mail confirmé. Vous pouvez vous connecter.</div>`;
-      setTimeout(() => (window.location.href = "login.html"), 1200);
+      messageBox.innerHTML = `<div class="form-message success">E-mail confirmé. Ouverture de votre dashboard…</div>`;
+      window.location.href = "dashboard.html";
     } catch (err) {
       const errorBox = document.createElement("div");
       errorBox.className = "form-message error";
