@@ -987,7 +987,7 @@ def _email_admin_message(recipient, subject, content, sender):
       <h2 style="font-size:18px;margin:22px 0 12px;">{safe_subject}</h2>
       <div style="padding:16px;background:#f9fafb;border-left:4px solid #16A34A;border-radius:6px;line-height:1.6;">{safe_content}</div>
       <p style="margin-top:22px;">Connectez-vous à votre espace développeur WEB STORE pour consulter vos messages et répondre.</p>
-      <p style="color:#6b7280;font-size:12px;margin-top:28px;">Cet e-mail est une copie d'un message reçu dans votre messagerie WEB STORE.</p>
+      <p style="color:#6b7280;font-size:12px;margin-top:28px;">https://web-store-dev.onrender.com</p>
     </div>
   </div>
 </body></html>"""
