@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#16A34A">
+  <title>Contact — WEB STORE</title>
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" href="../icons/icon-192.png">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <iframe id="webstoreLoadingFrame" class="loading-frame" src="../animation.html" title="Chargement de WEB STORE" aria-hidden="true" tabindex="-1"></iframe>
+  <script>(() => { const f=document.getElementById('webstoreLoadingFrame'); let done=false; function hide(){if(done)return;done=true;f.classList.add('is-hidden');setTimeout(()=>f.remove(),400)} window.addEventListener('webstore:content-ready',hide,{once:true});setTimeout(hide,15000); })();</script>
+  <header class="inner-header">
+    <a class="back-link" href="../index.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6M9 12h12"/></svg>
+      <img class="brand-mark" src="../icons/icon-192.png" alt="" aria-hidden="true"><span>WEB STORE</span>
+    </a>
+  </header>
+  <main class="inner-page">
+    <h1 class="inner-title">Contactez-nous</h1>
+    <p class="inner-intro">Une question, un besoin d'assistance ou une suggestion ? L'équipe WEB STORE est à votre écoute.</p>
+    <section class="contact-panel">
+      <p>Vous pouvez contacter directement notre équipe sur WhatsApp. Nous serons ravis de vous accompagner et de répondre à vos questions.</p>
+      <a href="https://wa.me/243860941972?text=Bonjour%20l%27%C3%A9quipe%20WEB%20STORE%20%21%20Je%20vous%20contacte%20depuis%20votre%20plateforme%20WEB%20STORE%20pour%20obtenir%20des%20informations.%20Merci%20de%20m%27aider." target="_blank" rel="noopener noreferrer" class="whatsapp-btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4.1A8 8 0 1 1 20 11.5Z"/><path d="M9 9c.5 2 2 3.5 4 4l1-1 2 1c-.3 1.5-1.5 2-3 1.5-3-1-5-3-6-6-.5-1.5 0-2.7 1.5-3l1 2-1 1.5Z"/></svg>
+        Contacter notre équipe sur WhatsApp
+      </a>
+    </section>
+  </main>
+  <footer class="site-footer"><strong>WEB STORE</strong><span>by <b>DEKAL HOUSE</b></span></footer>
+
+  <nav class="bottom-navigation" aria-label="Navigation principale">
+    <a class="bottom-nav-item" href="../index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg><span>Accueil</span></a>
+    <a class="bottom-nav-item" href="categories.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Explorer</span></a>
+    <a class="bottom-nav-item" href="../index.html?favorites=1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5.2-8.8 10.1-8.8 10.1S3.2 14 3.2 8.8A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/></svg><span>Favoris</span></a>
+    <a class="bottom-nav-item" href="contact.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg><span>Contact</span></a>
+  </nav>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script>WebStoreAPI.trackVisitor().catch(() => {}).finally(() => window.dispatchEvent(new Event("webstore:content-ready")));</script>
+</body>
+</html>
