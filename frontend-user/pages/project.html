@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#16A34A">
+  <meta name="description" content="Informations et détails du projet sur WEB STORE.">
+  <title>Détails du projet — WEB STORE</title>
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" href="../icons/icon-192.png">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    #webstoreLoadingFrame{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:99999;background:#fff;transition:opacity .35s ease,visibility .35s ease}
+    #webstoreLoadingFrame.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
+  </style>
+</head>
+<body>
+  <iframe id="webstoreLoadingFrame" src="../animation.html" title="Chargement de WEB STORE" aria-hidden="true" tabindex="-1"></iframe>
+  <script>
+    (() => {
+      const frame = document.getElementById("webstoreLoadingFrame");
+      let hidden = false;
+      function hide() {
+        if (hidden) return;
+        hidden = true;
+        frame.classList.add("is-hidden");
+        setTimeout(() => frame.remove(), 400);
+      }
+      window.addEventListener("webstore:content-ready", hide, { once: true });
+      setTimeout(hide, 15000);
+    })();
+  </script>
+
+  <header class="inner-header">
+    <a class="back-link" href="../index.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6M9 12h12"/></svg>
+      <span>Retour au catalogue</span>
+    </a>
+  </header>
+
+  <main class="project-page">
+    <div class="project-page-header">
+      <h1>Détails du projet</h1>
+      <span class="spacer"></span>
+      <button class="round-action" id="shareProject" type="button" aria-label="Partager le projet" title="Partager">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7.4 6.6 4.4"/></svg>
+      </button>
+      <button class="round-action" id="headerFavorite" type="button" aria-label="Ajouter aux favoris" title="Favoris">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5.2-8.8 10.1-8.8 10.1S3.2 14 3.2 8.8A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/></svg>
+      </button>
+    </div>
+
+    <section class="project-detail-card" id="projectSheet">
+      <p class="loading-state">Chargement du projet…</p>
+    </section>
+  </main>
+
+  <footer class="site-footer"><strong>WEB STORE</strong><span>by <b>DEKAL HOUSE</b></span></footer>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script>
+    const slug = new URLSearchParams(location.search).get("slug");
+    const heartSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5.2-8.8 10.1-8.8 10.1S3.2 14 3.2 8.8A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/></svg>';
+    const externalSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6m-11 5L20 4M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/></svg>';
+    let currentProject = null;
+    let isFavorite = false;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (!slug) {
+        renderError("Projet introuvable.");
+        ready();
+        return;
+      }
+      try {
+        await WebStoreAPI.trackVisitor();
+        const [project, favorite] = await Promise.all([
+          WebStoreAPI.getProject(slug),
+          WebStoreAPI.getFavorite(slug).catch(() => ({ is_favorite: false, favorites_count: 0 }))
+        ]);
+        currentProject = project;
+        isFavorite = !!favorite.is_favorite;
+        project.favorites_count = favorite.favorites_count ?? project.favorites_count ?? 0;
+        renderProject(project);
+        WebStoreAPI.trackEvent(slug, "view");
+        bindHeaderActions();
+      } catch (_) {
+        renderError("Impossible de charger ce projet pour le moment. Vérifiez votre connexion puis réessayez.");
+      } finally {
+        ready();
+      }
+    });
+
+    function ready() { window.dispatchEvent(new Event("webstore:content-ready")); }
+
+    function renderProject(project) {
+      const initials = String(project.name || "WS").split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase();
+      const iconSource = project.icon_data || (project.icon_url
+        ? (/^https?:\/\//i.test(project.icon_url) ? project.icon_url : WebStoreAPI.getAssetUrl(project.icon_url))
+        : "");
+      const icon = iconSource
+        ? `<img src="${escapeHtml(iconSource)}" alt="">`
+        : escapeHtml(initials);
+      const created = project.created_at ? new Date(project.created_at).toLocaleDateString("fr-FR") : "Non renseignée";
+      const favoriteCount = Number(project.favorites_count || 0);
+      const type = project.type === "PWA" ? "Application PWA" : "Site web";
+      const sheet = document.getElementById("projectSheet");
+
+      sheet.innerHTML = `
+        <div class="project-identity">
+          <div class="project-icon">${icon}</div>
+          <div class="project-identity-text">
+            <h2>${escapeHtml(project.name)}</h2>
+            <p>par ${escapeHtml(project.developer_name || "Développeur")}</p>
+            ${project.type === "PWA" && project.pwa_verified ? `<span class="verified-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>PWA vérifiée</span>` : ""}
+          </div>
+        </div>
+
+        <div class="project-stats">
+          <div class="project-stat"><strong id="favoriteStat">${favoriteCount}</strong><span>Favoris</span></div>
+          <div class="project-stat"><strong>${project.type === "PWA" ? "PWA" : "WEB"}</strong><span>Type</span></div>
+          <div class="project-stat"><strong>${escapeHtml(project.category || "Autre")}</strong><span>Catégorie</span></div>
+        </div>
+
+        <div class="project-actions">
+          <button class="action-button primary" id="visitBtn" type="button">${externalSvg} Visiter</button>
+          ${project.type === "PWA" ? `<button class="action-button" id="installBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 17v4h14v-4"/></svg> Installer</button>` : `<button class="action-button" id="saveBtn" type="button">${heartSvg} Enregistrer</button>`}
+          <button class="action-button ${isFavorite ? "favorite-active" : ""}" id="favoriteBtn" type="button" aria-pressed="${isFavorite}">${heartSvg}<span id="favoriteLabel">${isFavorite ? "Enregistré" : "Ajouter aux favoris"}</span></button>
+        </div>
+
+        <section class="detail-section">
+          <h3>À propos de ce projet</h3>
+          <p class="detail-description">${escapeHtml(project.description || "Aucune description disponible pour ce projet.")}</p>
+        </section>
+
+        <section class="detail-section">
+          <h3>Informations sur le projet</h3>
+          <div class="detail-information">
+            <div class="information-item"><span>Développeur</span><strong>${escapeHtml(project.developer_name || "Non renseigné")}</strong></div>
+            <div class="information-item"><span>Catégorie</span><strong>${escapeHtml(project.category || "Autre")}</strong></div>
+            <div class="information-item"><span>Type</span><strong>${type}</strong></div>
+            <div class="information-item"><span>Mis en favoris</span><strong><span id="favoriteInfoCount">${favoriteCount}</span> fois</strong></div>
+            <div class="information-item"><span>Publication</span><strong>${created}</strong></div>
+            <div class="information-item"><span>État PWA</span><strong>${project.type === "PWA" ? (project.pwa_verified ? "Vérifiée" : "Non vérifiée") : "Non applicable"}</strong></div>
+          </div>
+        </section>
+        <button class="report-link" id="reportBtn" type="button">Signaler cette publication</button>
+      `;
+
+      const favoriteButton = document.getElementById("favoriteBtn");
+      favoriteButton.addEventListener("click", toggleFavorite);
+      document.getElementById("visitBtn").addEventListener("click", visitProject);
+      document.getElementById("installBtn")?.addEventListener("click", installProject);
+      document.getElementById("saveBtn")?.addEventListener("click", toggleFavorite);
+      document.getElementById("reportBtn").addEventListener("click", reportProject);
+
+      const image = sheet.querySelector(".project-icon img");
+      if (image) image.addEventListener("error", () => { image.remove(); sheet.querySelector(".project-icon").textContent = initials; }, { once: true });
+    }
+
+    async function toggleFavorite() {
+      const button = document.getElementById("favoriteBtn");
+      if (button.disabled) return;
+      button.disabled = true;
+      try {
+        await WebStoreAPI.trackVisitor();
+        const result = await WebStoreAPI.toggleFavorite(slug);
+        isFavorite = !!result.is_favorite;
+        currentProject.favorites_count = result.favorites_count;
+        button.classList.toggle("favorite-active", isFavorite);
+        button.setAttribute("aria-pressed", String(isFavorite));
+        document.getElementById("favoriteLabel").textContent = isFavorite ? "Enregistré" : "Ajouter aux favoris";
+        document.getElementById("favoriteStat").textContent = result.favorites_count;
+        document.getElementById("favoriteInfoCount").textContent = result.favorites_count;
+        updateHeaderFavorite();
+      } catch (_) {
+        alert("Impossible de mettre à jour les favoris. Réessayez.");
+      } finally { button.disabled = false; }
+    }
+
+    function updateHeaderFavorite() {
+      const button = document.getElementById("headerFavorite");
+      button.classList.toggle("favorite-active", isFavorite);
+      button.setAttribute("aria-label", isFavorite ? "Retirer des favoris" : "Ajouter aux favoris");
+    }
+
+    function bindHeaderActions() {
+      updateHeaderFavorite();
+      document.getElementById("headerFavorite").addEventListener("click", toggleFavorite);
+      document.getElementById("shareProject").addEventListener("click", async () => {
+        const data = { title: currentProject.name, text: `Découvre ${currentProject.name} sur WEB STORE`, url: location.href };
+        if (navigator.share) {
+          try { await navigator.share(data); } catch (_) {}
+        } else if (navigator.clipboard?.writeText) {
+          try { await navigator.clipboard.writeText(location.href); alert("Lien du projet copié."); }
+          catch (_) { window.prompt("Copiez le lien du projet :", location.href); }
+        } else window.prompt("Copiez le lien du projet :", location.href);
+      });
+    }
+
+    function visitProject() {
+      const url = safeExternalUrl(currentProject.url);
+      if (!url) return alert("L'adresse de ce projet n'est pas valide.");
+      WebStoreAPI.trackEvent(slug, "visit_click");
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+
+    function installProject() {
+      const url = safeExternalUrl(currentProject.url);
+      if (!url) return alert("L'adresse de cette PWA n'est pas valide.");
+      WebStoreAPI.trackEvent(slug, "install");
+      alert("La page de cette PWA va s’ouvrir. Dans le navigateur, choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil » si cette option est proposée.");
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+
+    function reportProject() {
+      const reason = prompt("Pourquoi signalez-vous cette publication ?");
+      if (!reason) return;
+      WebStoreAPI.postReport(slug, { reason, description: "" })
+        .then(() => alert("Merci, votre signalement a été transmis à l'administration."))
+        .catch(() => alert("Impossible d'envoyer le signalement pour le moment."));
+    }
+
+    function safeExternalUrl(value) {
+      try {
+        const url = new URL(String(value || ""));
+        return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+      } catch (_) { return ""; }
+    }
+    function escapeHtml(value) {
+      const div = document.createElement("div");
+      div.textContent = String(value ?? "");
+      return div.innerHTML;
+    }
+    function renderError(message) {
+      document.getElementById("projectSheet").innerHTML = `<p class="loading-state">${escapeHtml(message)}</p>`;
+    }
+  </script>
+</body>
+</html>
