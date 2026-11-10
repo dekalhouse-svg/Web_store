@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta name="google-site-verification" content="CNi-duP0fWcudtIMXxZZ1erzLTmh17UTCUIrz0j41WY" />
+  <meta name="google-site-verification" content="CNi-duP0fWcudtIMXxZZ1erzLTmh17UTCUIrz0j41WY" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WEB STORE — Découvrez le Web</title>
+<meta name="description" content="Découvrez et installez des sites Web et applications PWA créés par des développeurs indépendants.">
+<meta name="theme-color" content="#16A34A">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  #webstoreLoadingFrame { position:fixed; inset:0; width:100%; height:100%; border:0; z-index:99999; background:#fff; opacity:1; visibility:visible; transition:opacity .35s ease, visibility .35s ease; }
+  #webstoreLoadingFrame.is-hidden { opacity:0; visibility:hidden; pointer-events:none; }
+</style>
+</head>
+<body>
+<iframe id="webstoreLoadingFrame" src="animation.html" title="Chargement de WEB STORE" aria-hidden="true" tabindex="-1"></iframe>
+<style>
+  #webstoreLoadError {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #f8fafc;
+    color: #0f172a;
+    text-align: center;
+    font-family: inherit;
+  }
+  #webstoreLoadError.is-visible { display: flex; }
+  #webstoreLoadError .error-content {
+    width: 100%;
+    max-width: 380px;
+  }
+  #webstoreLoadError .error-icon {
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #fee2e2;
+    color: #dc2626;
+    font-size: 30px;
+  }
+  #webstoreLoadError h2 {
+    margin: 0 0 10px;
+    font-size: 23px;
+  }
+  #webstoreLoadError p {
+    margin: 0 0 22px;
+    color: #64748b;
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  #webstoreRetryBtn {
+    border: 0;
+    border-radius: 9px;
+    padding: 12px 20px;
+    background: #16a34a;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #webstoreLoadError .error-brand {
+    margin-top: 24px;
+    color: #64748b;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+  }
+</style>
+<script>
+  (function () {
+    const frame = document.getElementById("webstoreLoadingFrame");
+    let finished = false;
+    let timeoutId;
+
+    function removeLoader() {
+      if (frame && frame.isConnected) {
+        frame.classList.add("is-hidden");
+        window.setTimeout(() => frame.remove(), 400);
+      }
+    }
+
+    function showLoadError() {
+      if (finished) return;
+      removeLoader();
+      const error = document.getElementById("webstoreLoadError");
+      if (error) error.classList.add("is-visible");
+    }
+
+    function contentReady() {
+      finished = true;
+      window.clearTimeout(timeoutId);
+      const error = document.getElementById("webstoreLoadError");
+      if (error) error.classList.remove("is-visible");
+      removeLoader();
+    }
+
+    window.addEventListener("webstore:content-ready", contentReady);
+    timeoutId = window.setTimeout(showLoadError, 15000);
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const retry = document.getElementById("webstoreRetryBtn");
+      if (retry) retry.addEventListener("click", function () {
+        window.location.reload();
+      });
+    });
+  })();
+</script>
+
+<div id="webstoreLoadError" role="alert" aria-live="assertive">
+  <div class="error-content">
+    <div class="error-icon" aria-hidden="true">!</div>
+    <h2>Oups ! Un problème est survenu</h2>
+    <p>Le site met plus de temps que prévu à se charger. Vérifiez votre connexion Internet et réessayez.</p>
+    <button id="webstoreRetryBtn" type="button">Réessayer</button>
+    <div class="error-brand">WEB STORE</div>
+  </div>
+</div>
+
+<div class="offline-banner" id="offlineBanner" hidden>
+  Vous êtes hors ligne. Certaines informations peuvent ne pas être à jour.
+</div>
+
+<header class="site-header">
+  <a class="logo" href="index.html">WEB<span>STORE</span></a>
+  <nav class="menu" id="menu"><a href="index.html" class="active">Accueil</a><a href="pages/categories.html">Catégories</a><a href="pages/contact.html">Contact</a></nav>
+  <div class="header-actions"><a class="header-favorites" href="index.html#projectList" aria-label="Favoris">♡</a><button id="appActionBtn" type="button" hidden>Installer</button><button class="menu-btn" id="menuBtn" aria-label="Ouvrir le menu">☰</button></div>
+</header>
+<main class="home-main">
+  <section class="welcome home-welcome"><p class="eyebrow">L'UNIVERS DES CRÉATIONS WEB</p><h1>Découvrez le Web autrement.</h1><p>Explorez des sites et applications PWA imaginés par des développeurs indépendants.</p></section>
+  <section class="search home-search" aria-label="Rechercher un projet"><span class="search-symbol" aria-hidden="true">⌕</span><input id="search" class="search-box" type="search" placeholder="Rechercher un site ou une PWA..." autocomplete="off"></section>
+  <section class="category-section" aria-label="Catégories"><div class="categories" id="categoryList"><button class="category active" data-slug="all">Découvrir</button></div></section>
+  <section class="section featured-section" id="featuredSection" hidden><div class="section-header"><h2>À la une</h2><span class="section-kicker">Sélection WEB STORE</span></div><div class="projects featured-projects" id="featuredList"></div></section>
+  <section class="section catalog-section"><div class="section-header"><div><h2>Populaires & récents</h2><p>Les créations à découvrir</p></div><a href="pages/categories.html" class="section-link">Explorer <span>›</span></a></div><div class="projects" id="projectList"></div><div class="empty" id="empty">Chargement des projets…</div></section>
+  <section class="section category-discovery"><div class="section-header"><div><h2>Explorer par catégorie</h2><p>Trouvez ce qui vous intéresse</p></div><a href="pages/categories.html" class="section-link">Tout voir <span>›</span></a></div><div class="category-shortcuts"><a href="pages/categories.html" class="category-shortcut"><span>⌘</span> Technologie</a><a href="pages/categories.html" class="category-shortcut"><span>▣</span> Productivité</a><a href="pages/categories.html" class="category-shortcut"><span>⌂</span> Éducation</a><a href="pages/categories.html" class="category-shortcut"><span>▶</span> Divertissement</a></div></section>
+</main>
+<nav class="mobile-bottom-nav" aria-label="Navigation principale"><a class="is-current" href="index.html"><span>⌂</span>Accueil</a><a href="pages/categories.html"><span>◈</span>Explorer</a><a href="index.html#projectList"><span>♡</span>Favoris</a><a href="pages/contact.html"><span>●</span>Contact</a></nav>
+<footer>WEB STORE<br><br>by <strong>DEKAL HOUSE</strong></footer>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
