@@ -1,4 +1,4 @@
-const CACHE_NAME = "webstore-user-v13";
+webstore-user-v13 CACHE_NAME = "webstore-user-v1.0";
 const APP_SHELL = [
   "./", "./index.html", "./animation.html", "./offline.html",
   "./css/style.css", "./js/app.js", "./js/config.js", "./js/api.js", "./js/consent-gate.js",
