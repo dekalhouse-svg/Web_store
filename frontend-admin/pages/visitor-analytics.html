@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Données visiteurs — WEB STORE Admin</title>
+<meta name="theme-color" content="#0B0B0F">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+.analytics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-bottom:18px}
+.analytics-grid .stat-card{min-width:0}
+.analytics-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.analytics-toolbar select{max-width:220px}
+.data-table-wrap{overflow-x:auto}
+.data-table-wrap table{min-width:520px;width:100%;border-collapse:collapse}
+.data-table-wrap th,.data-table-wrap td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--color-border);font-size:13px}
+.data-table-wrap th{color:var(--color-muted);font-weight:600}
+.muted{color:var(--color-muted);font-size:12px}
+.pill-type{display:inline-block;padding:4px 8px;border-radius:20px;background:rgba(22,163,74,.12);color:#16A34A;font-size:11px}
+.section-note{margin:0 0 12px;color:var(--color-muted);font-size:13px}
+@media(max-width:600px){.analytics-toolbar{align-items:stretch}.analytics-toolbar select{max-width:none;width:100%}}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB STORE<strong>ADMIN</strong></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html">Vue générale</a>
+      <a href="visitor-analytics.html" class="active">Données visiteurs</a>
+      <a href="category-relations.html">Catégories voisines</a><a href="developers.html">Développeurs</a>
+      <a href="publications.html">Publications</a>
+      <a href="messages.html">messages</a>
+      <a href="profile.html">profil</a>
+    </nav>
+    <div class="sidebar-footer"><button class="sidebar-logout" id="logoutBtn">Se déconnecter</button></div>
+  </aside>
+  <div class="content">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-title">Données visiteurs</div><div></div>
+    </div>
+    <div class="page">
+      <div class="card">
+        <div class="analytics-toolbar">
+          <div><h2 style="margin:0">Activité des visiteurs</h2><p class="section-note">Recherches, catégories consultées et projets ouverts enregistrés par WEB STORE.</p></div>
+          <select id="periodSelect" aria-label="Période d'analyse">
+            <option value="7">7 derniers jours</option>
+            <option value="30" selected>30 derniers jours</option>
+            <option value="365">12 derniers mois</option>
+            <option value="all">Depuis le début</option>
+          </select>
+        </div>
+      </div>
+      <div class="analytics-grid" id="summary">
+        <div class="stat-card"><div class="value">—</div><div class="label">Visiteurs actifs</div></div>
+        <div class="stat-card"><div class="value">—</div><div class="label">Activités enregistrées</div></div>
+        <div class="stat-card"><div class="value">—</div><div class="label">Recherches</div></div>
+        <div class="stat-card"><div class="value">—</div><div class="label">Recherches sans résultat</div></div>
+        <div class="stat-card"><div class="value">—</div><div class="label">Catégories consultées</div></div>
+        <div class="stat-card"><div class="value">—</div><div class="label">Ouvertures de projets</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Catégories les plus consultées</h2></div>
+        <div class="data-table-wrap" id="categoriesTable"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Recherches les plus fréquentes</h2></div>
+        <div class="data-table-wrap" id="searchesTable"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Projets les plus ouverts</h2></div>
+        <div class="data-table-wrap" id="projectsTable"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Activités récentes</h2></div>
+        <p class="section-note">Les identifiants visiteurs sont partiellement masqués. Maximum affiché : 150 activités récentes.</p>
+        <div class="data-table-wrap" id="recentTable"></div>
+      </div>
+      <p id="loadError" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+</div>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (value) => { const n=document.createElement("span"); n.textContent=String(value ?? ""); return n.innerHTML; };
+const number = (value) => Number(value || 0).toLocaleString("fr-FR");
+function table(headers, rows, empty) {
+  if (!rows.length) return `<p class="empty-state">${empty}</p>`;
+  return `<table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
+}
+async function loadAnalytics() {
+  $("loadError").textContent = "";
+  $("categoriesTable").innerHTML = $("searchesTable").innerHTML = $("projectsTable").innerHTML = $("recentTable").innerHTML = "Chargement…";
+  try {
+    const d = await WebStoreAdminAPI.getVisitorAnalytics($("periodSelect").value);
+    const cards = [
+      [d.visitors_count,"Visiteurs actifs"],[d.activities_count,"Activités enregistrées"],
+      [d.searches_count,"Recherches"],[d.zero_result_searches_count,"Recherches sans résultat"],
+      [d.category_views_count,"Catégories consultées"],[d.project_opens_count,"Ouvertures de projets"]
+    ];
+    $("summary").innerHTML = cards.map(([v,l])=>`<div class="stat-card"><div class="value">${number(v)}</div><div class="label">${l}</div></div>`).join("");
+    $("categoriesTable").innerHTML = table(["Catégorie","Consultations","Visiteurs distincts"],(d.top_categories||[]).map(x=>`<tr><td>${esc(x.category)}</td><td>${number(x.total)}</td><td>${number(x.visitors)}</td></tr>`),"Aucune catégorie consultée sur cette période.");
+    $("searchesTable").innerHTML = table(["Recherche","Nombre","Visiteurs distincts"],(d.top_searches||[]).map(x=>`<tr><td>${esc(x.search_query)}</td><td>${number(x.total)}</td><td>${number(x.visitors)}</td></tr>`),"Aucune recherche enregistrée sur cette période.");
+    $("projectsTable").innerHTML = table(["Projet","Catégorie","Ouvertures","Visiteurs distincts"],(d.popular_projects||[]).map(x=>`<tr><td>${esc(x.project__name)}</td><td>${esc(x.category)}</td><td>${number(x.total)}</td><td>${number(x.visitors)}</td></tr>`),"Aucun projet ouvert sur cette période.");
+    $("recentTable").innerHTML = table(["Activité","Détail","Résultats","Visiteur","Date"],(d.recent_activities||[]).map(x=>{
+      const detail=x.type==="search" ? x.query : (x.project_name || x.category || "—");
+      const results=x.type==="search" ? (x.results_count===null ? "—" : number(x.results_count)) : "—";
+      return `<tr><td><span class="pill-type">${esc(x.type_label)}</span></td><td>${esc(detail)}</td><td>${results}</td><td class="muted">${esc(x.visitor_id)}</td><td class="muted">${esc(new Date(x.created_at).toLocaleString("fr-FR"))}</td></tr>`;
+    }),"Aucune activité enregistrée.");
+  } catch (e) {
+    $("loadError").textContent = "Impossible de charger les données : " + e.message;
+    $("categoriesTable").innerHTML = $("searchesTable").innerHTML = $("projectsTable").innerHTML = $("recentTable").innerHTML = "";
+  }
+}
+$("periodSelect").addEventListener("change",loadAnalytics);
+loadAnalytics();
+</script>
+</body>
+</html>
