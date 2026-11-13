@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Performances des projets — WEB STORE Admin</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body><div class="app-shell">
+<aside class="sidebar" id="sidebar"><div class="sidebar-logo">WEB STORE<strong>ADMIN</strong></div>
+<nav class="sidebar-nav">
+<a href="dashboard.html">Vue générale</a><a href="project-analytics.html" class="active">Performances projets</a>
+<a href="category-relations.html">Catégories voisines</a><a href="visitor-analytics.html">Données visiteurs</a>
+<a href="developers.html">Développeurs</a><a href="publications.html">Publications</a><a href="messages.html">Messages</a><a href="profile.html">Profil</a>
+</nav><div class="sidebar-footer"><button class="sidebar-logout" id="logoutBtn">Se déconnecter</button></div></aside>
+<div class="content"><div class="topbar"><button class="menu-toggle" id="menuToggle">☰</button><div class="topbar-title">Performances des projets</div><div></div></div>
+<main class="page">
+<div class="card"><div class="card-header"><h2>Période d'analyse</h2></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+<label>Période<select id="period" style="display:block;padding:9px;margin-top:5px"><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="week">Cette semaine</option><option value="month">Ce mois</option><option value="year">Cette année</option><option value="total">Depuis le début</option><option value="custom">Personnalisée</option></select></label>
+<label id="startWrap" hidden>Du <input type="date" id="start"></label><label id="endWrap" hidden>Au <input type="date" id="end"></label>
+<button class="btn btn-primary" id="apply" type="button">Appliquer</button></div></div>
+<div class="stat-grid" id="totals"></div>
+<div class="card"><div class="card-header"><h2>Classements des projets</h2></div>
+<div id="rankings"></div><p id="installNote" style="font-size:12px;color:var(--color-text-muted)"></p></div>
+<div class="card"><div class="card-header"><h2>Tous les projets publiés</h2></div>
+<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>Projet</th><th>Développeur</th><th>Vues</th><th>Visites</th><th>Favoris</th><th>Clics installer</th></tr></thead><tbody id="projectRows"></tbody></table></div></div>
+</main></div></div>
+<script src="../js/config.js"></script><script src="../js/api.js"></script><script src="../js/auth.js"></script>
+<script>
+const period=document.getElementById('period');
+period.addEventListener('change',()=>{const c=period.value==='custom';document.getElementById('startWrap').hidden=!c;document.getElementById('endWrap').hidden=!c});
+document.getElementById('apply').addEventListener('click',load);
+function cell(v){const e=document.createElement('span');e.textContent=String(v??'');return e}
+function tableRows(items,key){return '<ol style="padding-left:22px">'+items.slice(0,10).map(x=>`<li style="padding:5px 0">${escapeHtml(x.name)} — ${x[key]}</li>`).join('')+'</ol>'}
+function escapeHtml(v){const e=document.createElement('span');e.textContent=String(v??'');return e.innerHTML}
+async function load(){
+ const params={period:period.value};if(params.period==='custom'){params.start=document.getElementById('start').value;params.end=document.getElementById('end').value;if(!params.start||!params.end){alert('Choisissez les deux dates.');return}}
+ try{const d=await WebStoreAdminAPI.getProjectAnalytics(params);const t=d.totals;
+ document.getElementById('totals').innerHTML=[['Vues',t.views],['Clics « Visiter »',t.visits],['Favoris',t.favorites],['Clics « Installer »',t.install_clicks]].map(x=>`<div class="stat-card"><div class="value">${x[1]}</div><div class="label">${x[0]}</div></div>`).join('');
+ const sets=[['Plus consultés',d.most_viewed,'views'],['Plus visités',d.most_visited,'visits'],['Plus ajoutés aux favoris',d.most_favorited,'favorites'],['Plus de clics « Installer »',d.most_installed,'install_clicks']];
+ document.getElementById('rankings').innerHTML=sets.map(x=>`<section style="margin:14px 0"><h3>${x[0]}</h3>${tableRows(x[1],x[2])}</section>`).join('');
+ document.getElementById('installNote').textContent=d.install_note;
+ document.getElementById('projectRows').innerHTML=d.projects.map(p=>`<tr><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.developer)}</td><td>${p.views}</td><td>${p.visits}</td><td>${p.favorites}</td><td>${p.install_clicks}</td></tr>`).join('');
+ }catch(e){alert(e.message||'Impossible de charger les statistiques.')}
+}
+load();
+</script></body></html>
