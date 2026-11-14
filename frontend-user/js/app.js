@@ -31,7 +31,7 @@ async function loadSponsoredCampaign(){
    const media=document.createElement('div');media.className='sponsored-media';
    const image=campaign.image_data||campaign.image_url;
    if(image){const img=document.createElement('img');img.src=WebStoreAPI.getAssetUrl(image);img.alt='';img.loading='lazy';img.onerror=()=>media.classList.add('no-image');media.append(img)}else media.classList.add('no-image');
-   const label=document.createElement('span');label.className='sponsored-label';label.textContent='PUBLICITÉ';
+   const label=document.createElement('span');label.className='sponsored-label';label.textContent='SPONSORISÉ';
    const content=document.createElement('div');content.className='sponsored-content';
    const icon=document.createElement('img');icon.className='sponsored-project-icon';icon.alt='';icon.src=p.icon_url?WebStoreAPI.getAssetUrl(p.icon_url):(p.icon_data||'');
    const details=document.createElement('div');details.className='sponsored-details';
