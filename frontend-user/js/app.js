@@ -21,8 +21,8 @@ async function loadSponsoredCampaign(){
   if(!Array.isArray(campaigns)||!campaigns.length)return;
   const section=document.createElement('section');section.className='sponsored-section';
   const heading=document.createElement('div');heading.className='sponsored-section-heading';
-  const title=document.createElement('h2');title.textContent='Sponsorisé · À découvrir';
-  const hint=document.createElement('span');hint.textContent='Faites glisser pour découvrir';
+  const title=document.createElement('h2');title.textContent='Sponsorisé'-section';
+  const hint=document.createElement('span');hint.textContent='';
   heading.append(title,hint);
   const rail=document.createElement('div');rail.className='sponsored-rail';rail.setAttribute('aria-label','Campagnes sponsorisées');
   campaigns.forEach(campaign=>{
