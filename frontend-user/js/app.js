@@ -21,7 +21,7 @@ async function loadSponsoredCampaign(){
   if(!Array.isArray(campaigns)||!campaigns.length)return;
   const section=document.createElement('section');section.className='sponsored-section';
   const heading=document.createElement('div');heading.className='sponsored-section-heading';
-  const title=document.createElement('h2');title.textContent='Sponsorisé'-section';
+  const title=document.createElement('h2');title.textContent = 'Sponsorisé';
   const hint=document.createElement('span');hint.textContent='';
   heading.append(title,hint);
   const rail=document.createElement('div');rail.className='sponsored-rail';rail.setAttribute('aria-label','Campagnes sponsorisées');
