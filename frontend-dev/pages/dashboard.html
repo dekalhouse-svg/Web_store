@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="../css/style.css">
 <style>
 .dashboard-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px}
-.dashboard-actions .btn{min-height:42px;padding:0 16px}
+.dashboard-actions .btn{min-height:42px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:1.25;white-space:normal}
 .overview-card{margin-top:22px}
 .overview-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
 .overview-head h2{font-size:16px;margin:0}
@@ -23,8 +23,32 @@
 .overview-metric .metric-label{font-size:12px;color:#64748b;margin-top:7px;line-height:1.4}
 .overview-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:15px;color:#64748b;font-size:11px}
 .overview-state{padding:22px;text-align:center;color:#64748b;font-size:13px}
+.dashboard-charts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:18px}
+.dashboard-chart-card{border:1px solid #e2e8f0;border-radius:14px;padding:18px;min-width:0;background:#fff}
+.dashboard-chart-card h3{font-size:14px;color:#0f172a;margin:0 0 5px}
+.chart-subtitle{font-size:11px;color:#64748b;line-height:1.5;margin-bottom:16px}
+.top-project-chart{display:flex;align-items:center;justify-content:center;gap:22px;min-height:220px;flex-wrap:wrap}
+.top-project-pie{width:190px;height:190px;flex:0 0 190px;border-radius:50%;position:relative;background:#e2e8f0}
+.top-project-pie:after{content:"";position:absolute;inset:30%;background:#fff;border-radius:50%}
+.pie-legend{display:grid;gap:10px;min-width:130px;flex:1}
+.pie-legend-item{display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:8px;font-size:11px;color:#475569}
+.pie-dot{width:9px;height:9px;border-radius:3px}
+.pie-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pie-value{font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums}
+.comparison-wrap{min-height:220px;display:flex;flex-direction:column;justify-content:center;gap:16px}
+.comparison-summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.comparison-change{font-size:25px;font-weight:800;letter-spacing:-.7px;color:#0f172a}
+.comparison-change.positive{color:#15803d}.comparison-change.negative{color:#dc2626}.comparison-change.neutral{color:#64748b}
+.comparison-caption{font-size:11px;color:#64748b}
+.comparison-bars{display:grid;gap:13px}
+.comparison-row{display:grid;grid-template-columns:100px minmax(0,1fr) 55px;align-items:center;gap:9px;font-size:11px;color:#475569}
+.comparison-track{height:13px;border-radius:20px;background:#f1f5f9;overflow:hidden}
+.comparison-fill{height:100%;border-radius:20px;min-width:0}
+.comparison-fill.current{background:#16a34a}.comparison-fill.previous{background:#94a3b8}
+.comparison-number{text-align:right;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums}
 @media(max-width:1000px){.overview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:620px){.overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-head{align-items:flex-start}.period-tabs{width:100%}.period-tab{flex:1;padding:9px 5px}.overview-metric{padding:13px}.overview-metric .metric-value{font-size:22px}}
+@media(max-width:760px){.dashboard-charts{grid-template-columns:1fr}.top-project-chart{gap:16px}}
+@media(max-width:620px){.overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-head{align-items:flex-start}.period-tabs{width:100%}.period-tab{flex:1;padding:9px 5px}.overview-metric{padding:13px}.overview-metric .metric-value{font-size:22px}.dashboard-chart-card{padding:15px}.top-project-pie{width:170px;height:170px;flex-basis:170px}.comparison-row{grid-template-columns:82px minmax(0,1fr) 45px}}
 </style>
 </head>
 <body>
@@ -67,6 +91,18 @@
         </div>
         <div id="overviewStats" class="overview-grid"><div class="overview-state">Chargement des statistiques…</div></div>
         <div class="overview-foot"><span id="overviewProjectCount">—</span><span>Données cumulées de tous vos projets</span></div>
+        <div class="dashboard-charts">
+          <section class="dashboard-chart-card" aria-labelledby="topProjectsTitle">
+            <h3 id="topProjectsTitle">Top 5 des projets les plus visités</h3>
+            <div class="chart-subtitle">Répartition des visites de fiches pendant la période sélectionnée</div>
+            <div id="topProjectsChart" class="top-project-chart"><div class="overview-state">Chargement…</div></div>
+          </section>
+          <section class="dashboard-chart-card" aria-labelledby="periodCompareTitle">
+            <h3 id="periodCompareTitle">Évolution par rapport à la période précédente</h3>
+            <div class="chart-subtitle">Comparaison du volume total d’activités : visites de fiches, clics vers les sites et clics sur Installer</div>
+            <div id="periodComparison" class="comparison-wrap"><div class="overview-state">Chargement…</div></div>
+          </section>
+        </div>
       </section>
     </div>
   </main>
@@ -76,6 +112,7 @@
 <script src="../js/auth.js"></script>
 <script>
 const numberFormat=value=>Number(value||0).toLocaleString("fr-FR");
+const chartColors=["#4285F4","#E44336","#F4B400","#0F9D58","#AB47BC"];
 let dashboardProjects=[];
 let selectedPeriod="week";
 const metricDefinitions=[
@@ -85,11 +122,41 @@ const metricDefinitions=[
   ["comments_count","Commentaires"],
   ["favorites_count","Ajouts aux favoris"]
 ];
+const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+function dateOnly(date){
+  const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,"0"),d=String(date.getDate()).padStart(2,"0");
+  return `${y}-${m}-${d}`;
+}
+function getPeriodRanges(period){
+  const now=new Date(), currentStart=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  if(period==="week"){
+    const day=(currentStart.getDay()+6)%7;
+    currentStart.setDate(currentStart.getDate()-day);
+  }else if(period==="month"){
+    currentStart.setDate(1);
+  }else{
+    currentStart.setMonth(0,1);
+  }
+  const previousStart=new Date(currentStart);
+  if(period==="week")previousStart.setDate(previousStart.getDate()-7);
+  else if(period==="month")previousStart.setMonth(previousStart.getMonth()-1);
+  else previousStart.setFullYear(previousStart.getFullYear()-1);
+  const previousEnd=new Date(currentStart);
+  previousEnd.setDate(previousEnd.getDate()-1);
+  return {
+    current:{start:dateOnly(currentStart),end:dateOnly(now)},
+    previous:{start:dateOnly(previousStart),end:dateOnly(previousEnd)}
+  };
+}
+async function fetchStatsForPeriod(project,range){
+  return WebStoreDevAPI.getProjectStats(project.id,{period:"custom",start:range.start,end:range.end});
+}
+function totalTrackedActivity(stats){
+  return Number(stats?.sheet_views||0)+Number(stats?.visit_clicks||0)+Number(stats?.install_clicks||0);
+}
 async function loadDashboard(){
-  const statsPromise=WebStoreDevAPI.getDashboardStats();
-  const projectsPromise=WebStoreDevAPI.getProjects();
   try{
-    const [stats,projects]=await Promise.all([statsPromise,projectsPromise]);
+    const [stats,projects]=await Promise.all([WebStoreDevAPI.getDashboardStats(),WebStoreDevAPI.getProjects()]);
     dashboardProjects=Array.isArray(projects)?projects:[];
     const cards=[
       {value:stats.published_count??0,label:"Projets publiés"},
@@ -100,20 +167,82 @@ async function loadDashboard(){
     document.getElementById("statGrid").innerHTML=cards.map(c=>`<div class="stat-card"><div class="value">${numberFormat(c.value)}</div><div class="label">${c.label}</div></div>`).join("");
     await loadOverview(selectedPeriod);
   }catch(err){
-    document.getElementById("overviewStats").innerHTML=`<div class="overview-state">Impossible de charger les données. ${String(err.message||"")}</div>`;
+    document.getElementById("overviewStats").innerHTML=`<div class="overview-state">Impossible de charger les données. ${escapeHTML(err.message||"")}</div>`;
+    document.getElementById("topProjectsChart").innerHTML='<div class="overview-state">Données indisponibles.</div>';
+    document.getElementById("periodComparison").innerHTML='<div class="overview-state">Données indisponibles.</div>';
     console.warn("Statistiques indisponibles :",err);
   }
 }
 async function loadOverview(period){
   const target=document.getElementById("overviewStats");
+  const pieTarget=document.getElementById("topProjectsChart");
+  const compareTarget=document.getElementById("periodComparison");
   target.innerHTML='<div class="overview-state">Mise à jour des statistiques…</div>';
+  pieTarget.innerHTML='<div class="overview-state">Calcul du classement…</div>';
+  compareTarget.innerHTML='<div class="overview-state">Comparaison…</div>';
   try{
-    const results=await Promise.all(dashboardProjects.map(project=>WebStoreDevAPI.getProjectStats(project.id,{period})));
+    const ranges=getPeriodRanges(period);
+    const projectResults=await Promise.all(dashboardProjects.map(async project=>{
+      const [current,previous]=await Promise.all([
+        fetchStatsForPeriod(project,ranges.current),
+        fetchStatsForPeriod(project,ranges.previous)
+      ]);
+      return {project,current,previous};
+    }));
     const totals=Object.fromEntries(metricDefinitions.map(([key])=>[key,0]));
-    results.forEach(item=>{if(!item)return;Object.keys(totals).forEach(key=>totals[key]+=Number(item[key]||0));});
+    projectResults.forEach(({current})=>{
+      metricDefinitions.forEach(([key])=>totals[key]+=Number(current?.[key]||0));
+    });
     target.innerHTML=metricDefinitions.map(([key,label])=>`<div class="overview-metric"><div class="metric-value">${numberFormat(totals[key])}</div><div class="metric-label">${label}</div></div>`).join("");
     document.getElementById("overviewProjectCount").textContent=`${dashboardProjects.length} projet${dashboardProjects.length>1?"s":""} pris en compte`;
-  }catch(err){target.innerHTML=`<div class="overview-state">Statistiques indisponibles : ${String(err.message||"")}</div>`;}
+    renderTopProjects(projectResults);
+    renderPeriodComparison(projectResults);
+  }catch(err){
+    const message=escapeHTML(err.message||"Erreur inconnue");
+    target.innerHTML=`<div class="overview-state">Statistiques indisponibles : ${message}</div>`;
+    pieTarget.innerHTML='<div class="overview-state">Impossible de calculer le top 5.</div>';
+    compareTarget.innerHTML='<div class="overview-state">Impossible de comparer les périodes.</div>';
+  }
+}
+function renderTopProjects(results){
+  const target=document.getElementById("topProjectsChart");
+  const top=results.map(({project,current})=>({
+    name:project.name||project.title||"Projet sans nom",
+    views:Number(current?.sheet_views||0)
+  })).filter(item=>item.views>0).sort((a,b)=>b.views-a.views).slice(0,5);
+  const total=top.reduce((sum,item)=>sum+item.views,0);
+  if(!top.length||!total){
+    target.innerHTML='<div class="overview-state">Aucune visite enregistrée pendant cette période.</div>';
+    return;
+  }
+  let cursor=0;
+  const segments=top.map((item,index)=>{
+    const start=cursor;cursor+=item.views/total*100;
+    return `${chartColors[index]} ${start}% ${cursor}%`;
+  }).join(",");
+  const legend=top.map((item,index)=>`<div class="pie-legend-item"><span class="pie-dot" style="background:${chartColors[index]}"></span><span class="pie-name" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</span><span class="pie-value">${numberFormat(item.views)}</span></div>`).join("");
+  target.innerHTML=`<div class="top-project-pie" role="img" aria-label="Diagramme circulaire des cinq projets les plus visités" style="background:conic-gradient(${segments})"></div><div class="pie-legend">${legend}<div class="comparison-caption">Total : ${numberFormat(total)} visites</div></div>`;
+}
+function renderPeriodComparison(results){
+  const target=document.getElementById("periodComparison");
+  const current=results.reduce((sum,item)=>sum+totalTrackedActivity(item.current),0);
+  const previous=results.reduce((sum,item)=>sum+totalTrackedActivity(item.previous),0);
+  let changeText="0 %",changeClass="neutral",caption="Activité identique à la période précédente.";
+  if(previous===0&&current>0){
+    changeText="Nouveau";changeClass="positive";caption="Aucune activité n’avait été enregistrée pendant la période précédente.";
+  }else if(previous>0){
+    const percent=((current-previous)/previous)*100;
+    const rounded=Math.abs(percent)>=100?Math.round(percent):Math.round(percent*10)/10;
+    changeText=`${percent>0?"+":""}${numberFormat(rounded)} %`;
+    changeClass=percent>0?"positive":percent<0?"negative":"neutral";
+    caption=percent>0?"Progression par rapport à la période précédente.":percent<0?"Baisse par rapport à la période précédente.":"Activité stable par rapport à la période précédente.";
+  }
+  const max=Math.max(current,previous,1);
+  target.innerHTML=`<div class="comparison-summary"><div class="comparison-change ${changeClass}">${changeText}</div><div class="comparison-caption">${caption}</div></div>
+    <div class="comparison-bars">
+      <div class="comparison-row"><span>Période actuelle</span><div class="comparison-track"><div class="comparison-fill current" style="width:${current/max*100}%"></div></div><strong class="comparison-number">${numberFormat(current)}</strong></div>
+      <div class="comparison-row"><span>Période précédente</span><div class="comparison-track"><div class="comparison-fill previous" style="width:${previous/max*100}%"></div></div><strong class="comparison-number">${numberFormat(previous)}</strong></div>
+    </div>`;
 }
 document.querySelectorAll(".period-tab").forEach(button=>button.addEventListener("click",()=>{
   selectedPeriod=button.dataset.period;
