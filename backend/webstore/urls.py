@@ -30,6 +30,7 @@ urlpatterns = [
     path("api/dev/password-reset/", views.dev_password_reset),
     path("api/dev/password-reset/confirm/", views.dev_password_reset_confirm),
     path("api/dev/me/", views.dev_me),
+    path("api/dev/password/change/", views.dev_password_change),
     path("api/dev/dashboard/", views.dev_dashboard),
     path("api/dev/projects/", views.dev_projects),
     path("api/dev/projects/<int:project_id>/", views.dev_project_detail),
