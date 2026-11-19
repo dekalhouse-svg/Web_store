@@ -61,3 +61,18 @@ un message d'indisponibilité clair.
 
 Fichiers statiques purs, déployables sur GitHub Pages, Netlify ou Render
 (Static Site). HTTPS requis pour le service worker et l'installation PWA.
+
+
+## Mise à jour de l’espace développeur — 19 novembre 2026
+
+Cette mise à jour est incrémentale : seuls les fichiers présents dans l’archive de correctif doivent être ajoutés ou remplacés dans leurs chemins respectifs.
+
+### Déploiement
+1. Copier les fichiers `backend/` vers le dépôt backend.
+2. Exécuter `python manage.py migrate` dans le service backend pour ajouter `DeveloperProfile.avatar_data`.
+3. Déployer les fichiers `frontend-dev/` sur l’hébergement du frontend développeur.
+4. Vérifier la connexion, le profil, l’ajout/suppression de photo, les statistiques, les projets et les messages.
+
+La photo de profil est redimensionnée dans le navigateur puis enregistrée sous forme de donnée image dans le profil développeur. Elle est privée et n’est pas ajoutée à la fiche publique du développeur.
+
+Les notifications de la nouvelle page sont une synthèse des messages et statuts de projets actuellement disponibles. Elles ne constituent pas encore un système de notifications push ni un historique persistant dédié.

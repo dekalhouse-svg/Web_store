@@ -11,7 +11,7 @@
  * Même si VERSION n'est pas changée, les fichiers sont toujours récupérés
  * sur le réseau en premier : le cache ne sert que quand on est hors ligne.
  */
-const VERSION = "2026.10.20-1";
+const VERSION = "2026.11.19-2";
 
 const CACHE_PREFIX = "webstore-dev-";
 const CACHE_NAME = CACHE_PREFIX + VERSION;
@@ -26,6 +26,7 @@ const APP_SHELL = [
   "/js/updater.js",
   "/js/api.js",
   "/js/auth.js",
+  "/js/dev-shell.js",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/pages/login.html",
@@ -37,7 +38,13 @@ const APP_SHELL = [
   "/pages/projects.html",
   "/pages/project-form.html",
   "/pages/project-stats.html",
-  "/pages/messages.html"
+  "/pages/messages.html",
+  "/pages/statistics.html",
+  "/pages/comments.html",
+  "/pages/notifications.html",
+  "/pages/settings.html",
+  "/pages/help.html",
+  "/pages/project-detail.html"
 ];
 
 self.addEventListener("install", (event) => {
