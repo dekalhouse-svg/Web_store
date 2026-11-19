@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Q, Sum
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.utils.text import slugify
 from .models import DeveloperProfile, Category, Project, Comment, Report, Event, AuthToken, Message, ModerationLog, Visitor, EmailCode, Favorite, CommentReport, VisitorActivity, CategoryRelation, SponsoredCampaign, SponsoredCampaignEvent, LoginAttemptByIP, RateLimitBucket
@@ -1031,8 +1032,63 @@ def dev_password_reset_confirm(request):
 
 @require("dev")
 def dev_me(request):
-    u=request.api_user; p=u.developer_profile
-    return ok({"id":u.id,"full_name":u.get_full_name(),"username":u.username,"email":u.email,"phone":p.phone,"status":p.status,"email_verified":p.email_verified})
+    u = request.api_user
+    p = u.developer_profile
+    if request.method == "POST":
+        body = json_body(request)
+        if not isinstance(body, dict):
+            return err("Données de profil invalides.", 400)
+        full_name = str(body.get("full_name", u.get_full_name())).strip()
+        phone = str(body.get("phone", p.phone)).strip()
+        if len(full_name) > 150 or len(phone) > 40:
+            return err("Nom ou téléphone trop long.", 400)
+        avatar_data = body.get("avatar_data", p.avatar_data)
+        if avatar_data != p.avatar_data:
+            if avatar_data:
+                try:
+                    avatar_data = validate_icon_data(avatar_data)
+                except ValueError as exc:
+                    return err(str(exc), 400)
+                if len(avatar_data) > 420000:
+                    return err("La photo de profil est trop volumineuse. Réduisez sa taille.", 400)
+            else:
+                avatar_data = ""
+        parts = full_name.split(" ", 1)
+        u.first_name = parts[0] if parts else ""
+        u.last_name = parts[1] if len(parts) > 1 else ""
+        u.save(update_fields=["first_name", "last_name"])
+        p.phone = phone
+        p.avatar_data = avatar_data
+        p.save(update_fields=["phone", "avatar_data"])
+    elif request.method != "GET":
+        return err("Méthode non autorisée.", 405)
+    return ok({"id":u.id,"full_name":u.get_full_name(),"username":u.username,"email":u.email,
+               "phone":p.phone,"avatar_data":p.avatar_data,"status":p.status,"email_verified":p.email_verified})
+
+
+@require("dev")
+def dev_password_change(request):
+    if request.method != "POST":
+        return err("Méthode non autorisée.", 405)
+    body = json_body(request)
+    current_password = str(body.get("current_password", ""))
+    new_password = str(body.get("new_password", ""))
+    confirm_password = str(body.get("confirm_password", ""))
+    user = request.api_user
+    if not user.check_password(current_password):
+        return err("Le mot de passe actuel est incorrect.", 400)
+    if new_password != confirm_password:
+        return err("Les nouveaux mots de passe ne correspondent pas.", 400)
+    if len(new_password) < 8:
+        return err("Le nouveau mot de passe doit contenir au moins 8 caractères.", 400)
+    try:
+        validate_password(new_password, user=user)
+    except ValidationError as exc:
+        return err(" ".join(exc.messages), 400)
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+    AuthToken.objects.filter(user=user, kind="dev").delete()
+    return ok({"message":"Mot de passe modifié. Reconnectez-vous avec votre nouveau mot de passe."})
 
 @require("dev")
 def dev_dashboard(request):
@@ -1138,6 +1194,7 @@ def _stats_since(request):
     now = timezone.now()
     if period == "7": return now - timedelta(days=7), period
     if period == "30": return now - timedelta(days=30), period
+    if period == "90": return now - timedelta(days=90), period
     if period == "week": return now - timedelta(days=now.weekday()), period
     if period == "month": return now.replace(day=1, hour=0, minute=0, second=0, microsecond=0), period
     if period == "year": return now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0), period
@@ -1180,6 +1237,19 @@ def dev_project_stats(request, project_id):
     since, period = _stats_since(request)
     if period == "invalid": return err("Période personnalisée invalide.",400)
     data = _event_stats([p], since)
+    event_qs = Event.objects.filter(project=p)
+    if isinstance(since, tuple):
+        event_qs = event_qs.filter(created_at__range=since)
+    elif since:
+        event_qs = event_qs.filter(created_at__gte=since)
+    grouped = event_qs.annotate(day=TruncDate("created_at")).values("day", "type").annotate(total=Count("id")).order_by("day")
+    series_map = {}
+    for item in grouped:
+        day = item["day"].isoformat()
+        series_map.setdefault(day, {"date": day, "view": 0, "visit_click": 0, "install": 0})
+        if item["type"] in {"view", "visit_click", "install"}:
+            series_map[day][item["type"]] = item["total"]
+    data["series"] = list(series_map.values())
     favorites = Favorite.objects.filter(project=p)
     if isinstance(since, tuple): favorites = favorites.filter(created_at__range=since)
     elif since: favorites = favorites.filter(created_at__gte=since)

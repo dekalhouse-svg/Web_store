@@ -5,6 +5,7 @@ class DeveloperProfile(models.Model):
     STATUS_CHOICES = [("ACTIF","ACTIF"),("SUSPENDU","SUSPENDU")]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="developer_profile")
     phone = models.CharField(max_length=40, blank=True)
+    avatar_data = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="ACTIF")
     email_verified = models.BooleanField(default=False)
     verification_code = models.CharField(max_length=20, blank=True)
