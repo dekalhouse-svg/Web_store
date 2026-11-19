@@ -16,6 +16,7 @@
 .profile-status{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.profile-badge{display:inline-flex;padding:7px 11px;border-radius:999px;background:#f1f5f9;color:#334155;font-size:.9rem}
 .profile-badge.good{background:#dcfce7;color:#166534}.profile-badge.warn{background:#fef3c7;color:#92400e}
 .profile-message{margin-top:14px;padding:12px 14px;border-radius:10px;line-height:1.5}.profile-message:empty{display:none}.profile-message.success{background:#dcfce7;color:#166534}.profile-message.error{background:#fee2e2;color:#991b1b}.profile-message.info{background:#eff6ff;color:#1d4ed8}
+.avatar-editor{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.avatar-preview{width:104px;height:104px;border-radius:50%;object-fit:cover;background:#e8f7ed;border:3px solid #d1fae5}.avatar-actions{display:flex;gap:8px;flex-wrap:wrap}.avatar-actions .btn{width:auto;padding:0 16px}.avatar-file{display:none}
 [hidden]{display:none!important}
 @media(max-width:650px){.profile-grid{grid-template-columns:1fr;gap:15px}.profile-card .card-header{align-items:flex-start}.profile-actions{justify-content:stretch}.profile-actions .btn{flex:1 1 100%}}
 </style>
@@ -24,18 +25,34 @@
 <div class="app-shell">
 <aside class="sidebar" id="sidebar"><div class="sidebar-logo">WEB<span>STORE</span></div>
 <nav class="sidebar-nav" aria-label="Navigation principale">
-<a href="dashboard.html">Vue générale</a><a href="projects.html">Mes projets</a><a href="messages.html">Messages</a><a href="profile.html" class="active" aria-current="page">Profil</a>
+<a href="dashboard.html">Vue générale</a>
+<a href="projects.html">Mes projets</a>
+<a href="project-form.html">Publier un projet</a>
+<a href="statistics.html">Statistiques</a>
+<a href="comments.html">Commentaires</a>
+<a href="messages.html">Messages</a>
+<a href="notifications.html">Notifications</a>
+<a href="profile.html">Mon profil</a>
+<a href="settings.html">Paramètres et sécurité</a>
+<a href="help.html">Centre d'aide</a>
 </nav><div class="sidebar-footer"><button class="sidebar-logout" id="logoutBtn" type="button">Se déconnecter</button></div></aside>
 <main class="content"><header class="topbar"><button class="menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">☰</button><div class="topbar-title">Mon profil</div><div></div></header>
 <div class="page profile-page">
 <h1>Mon profil</h1><p class="profile-intro">Consultez vos informations de compte et gérez les détails de votre profil depuis cet espace.</p>
 <section class="card profile-card" aria-labelledby="infoTitle">
 <div class="card-header"><div><h2 id="infoTitle">Mes informations</h2><p class="profile-help">Modifiez vos informations personnelles en mode édition.</p></div><button class="btn" id="editBtn" type="button">Modifier mes informations</button></div>
-<div class="card-body"><div id="profileInfo" class="empty-state">Chargement du profil…</div><div id="profileStatus" class="profile-status" hidden></div>
+<div class="card-body">
+<div class="avatar-editor">
+<img id="avatarPreview" class="avatar-preview" alt="Photo de profil" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='50' fill='%23e8f7ed'/%3E%3Ccircle cx='50' cy='37' r='18' fill='%2316a34a'/%3E%3Cpath d='M17 91c3-20 16-30 33-30s30 10 33 30' fill='%2316a34a'/%3E%3C/svg%3E">
+<div><strong>Photo de profil</strong><p class="profile-help">Visible uniquement dans votre espace développeur. JPG, PNG ou WebP. La photo est redimensionnée avant l'envoi.</p>
+<div class="avatar-actions"><label class="btn btn-inline" for="avatarInput" style="display:inline-flex;align-items:center;cursor:pointer">Choisir une photo</label><input class="avatar-file" id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp"><button class="btn btn-outline btn-inline" id="removeAvatarBtn" type="button">Supprimer</button></div>
+<div id="avatarMessage" class="profile-message" role="status" aria-live="polite"></div></div>
+</div>
+<div id="profileInfo" class="empty-state">Chargement du profil…</div><div id="profileStatus" class="profile-status" hidden></div>
 <form id="profileForm" hidden><div class="profile-grid">
 <div class="profile-field"><label for="full_name">Nom complet</label><input id="full_name" name="full_name" type="text" autocomplete="name" maxlength="150"></div>
 <div class="profile-field"><label for="username">Nom d’utilisateur</label><input id="username" name="username" type="text" autocomplete="username" maxlength="150" readonly><p class="profile-help">Le nom d’utilisateur est en lecture seule.</p></div>
-<div class="profile-field"><label for="email">Adresse e-mail</label><input id="email" name="email" type="email" autocomplete="email" maxlength="254" required></div>
+<div class="profile-field"><label for="email">Adresse e-mail</label><input id="email" name="email" type="email" autocomplete="email" maxlength="254" readonly><p class="profile-help">L’adresse e-mail ne peut pas être modifiée depuis cette page.</p></div>
 <div class="profile-field"><label for="phone">Téléphone</label><input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="30"></div>
 </div><div id="profileFormMessage" class="profile-message" role="status" aria-live="polite"></div>
 <div class="profile-actions"><button class="btn" id="cancelEditBtn" type="button">Annuler</button><button class="btn" id="saveProfileBtn" type="submit">Enregistrer les informations</button></div></form>
@@ -54,8 +71,10 @@
 const byId=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let currentUser=null;
+let pendingAvatarData=null;
 function message(el,text,type="info"){el.textContent=text||"";el.className="profile-message"+(text?" "+type:"");}
 function renderProfile(u){
+ byId("avatarPreview").src=u.avatar_data||"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2750%27 fill=%27%23e8f7ed%27/%3E%3Ccircle cx=%2750%27 cy=%2737%27 r=%2718%27 fill=%27%2316a34a%27/%3E%3Cpath d=%27M17 91c3-20 16-30 33-30s30 10 33 30%27 fill=%27%2316a34a%27/%3E%3C/svg%3E";
  byId("profileInfo").className="";
  byId("profileInfo").innerHTML=`<div class="profile-grid">
  <div><strong>Nom complet</strong><p>${esc(u.full_name||"Non renseigné")}</p></div>
@@ -66,16 +85,17 @@ function renderProfile(u){
  byId("profileStatus").innerHTML=`<span class="profile-badge">Statut : ${esc(u.status||"Non renseigné")}</span><span class="profile-badge ${u.email_verified?"good":"warn"}">E-mail : ${u.email_verified?"vérifié":"non vérifié"}</span>`;
 }
 function fillForm(u){byId("full_name").value=u.full_name||"";byId("username").value=u.username||"";byId("email").value=u.email||"";byId("phone").value=u.phone||"";}
-function closeEditor(){byId("profileForm").hidden=true;byId("profileInfo").hidden=false;byId("profileStatus").hidden=false;byId("editBtn").hidden=false;message(byId("profileFormMessage"),"");}
+function closeEditor(){pendingAvatarData=null;if(currentUser)renderProfile(currentUser);byId("profileForm").hidden=true;byId("profileInfo").hidden=false;byId("profileStatus").hidden=false;byId("editBtn").hidden=false;message(byId("profileFormMessage"),"");}
 byId("editBtn").addEventListener("click",()=>{fillForm(currentUser||{});byId("profileInfo").hidden=true;byId("profileStatus").hidden=true;byId("profileForm").hidden=false;byId("editBtn").hidden=true;message(byId("profileFormMessage"),"");});
 byId("cancelEditBtn").addEventListener("click",closeEditor);
 byId("profileForm").addEventListener("submit",async e=>{
  e.preventDefault();const save=byId("saveProfileBtn");
- const payload={full_name:byId("full_name").value.trim(),email:byId("email").value.trim(),phone:byId("phone").value.trim()};
+ const payload={full_name:byId("full_name").value.trim(),phone:byId("phone").value.trim()};
+ if(pendingAvatarData!==null) payload.avatar_data=pendingAvatarData;
  const update=WebStoreDevAPI.updateMe||WebStoreDevAPI.updateProfile;
  if(typeof update!=="function"){message(byId("profileFormMessage"),"La page permet de modifier les champs, mais l’API actuelle ne fournit pas de fonction de mise à jour du profil. Rien n’a été enregistré. Il faudra ajouter cette fonction côté API/backend.","error");return;}
  save.disabled=true;message(byId("profileFormMessage"),"Enregistrement en cours…");
- try{await update.call(WebStoreDevAPI,payload);currentUser=await WebStoreDevAPI.getMe();renderProfile(currentUser);closeEditor();}
+ try{await update.call(WebStoreDevAPI,payload);currentUser=await WebStoreDevAPI.getMe();pendingAvatarData=null;renderProfile(currentUser);closeEditor();message(byId("avatarMessage"),"Profil enregistré.","success");}
  catch(err){message(byId("profileFormMessage"),err.message||"Impossible d’enregistrer les informations.","error");}
  finally{save.disabled=false;}
 });
@@ -88,6 +108,25 @@ byId("passwordForm").addEventListener("submit",async e=>{
  try{const result=await WebStoreDevAPI.changePassword({current_password:byId("current_password").value,new_password:newPass,confirm_password:byId("confirm_password").value});message(byId("passwordMessage"),result.message||"Mot de passe modifié. Déconnexion en cours.","success");byId("passwordForm").reset();WebStoreDevAPI.logout();setTimeout(()=>location.href="login.html",1300);}
  catch(err){message(byId("passwordMessage"),err.message||"Impossible de modifier le mot de passe.","error");button.disabled=false;}
 });
-(async()=>{try{currentUser=await WebStoreDevAPI.getMe();renderProfile(currentUser);}catch(err){byId("profileInfo").textContent="Impossible de charger le profil : "+(err.message||"erreur inconnue");}})();
+byId("avatarInput").addEventListener("change",async event=>{
+ const file=event.target.files&&event.target.files[0]; if(!file)return;
+ if(!["image/jpeg","image/png","image/webp"].includes(file.type)){message(byId("avatarMessage"),"Choisissez une image JPG, PNG ou WebP.","error");return;}
+ try{
+  const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});
+  const image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=data;});
+  const canvas=document.createElement("canvas");const size=320;canvas.width=size;canvas.height=size;
+  const ctx=canvas.getContext("2d");const side=Math.min(image.width,image.height);const sx=(image.width-side)/2,sy=(image.height-side)/2;
+  ctx.drawImage(image,sx,sy,side,side,0,0,size,size);
+  pendingAvatarData=canvas.toDataURL("image/jpeg",0.78);byId("avatarPreview").src=pendingAvatarData;
+  message(byId("avatarMessage"),"Photo prête. Cliquez sur « Enregistrer les informations » pour la sauvegarder.","info");
+  byId("editBtn").click();byId("profileInfo").hidden=true;byId("profileStatus").hidden=true;byId("profileForm").hidden=false;byId("editBtn").hidden=true;
+ }catch(_){message(byId("avatarMessage"),"Impossible de lire cette image.","error");}
+});
+byId("removeAvatarBtn").addEventListener("click",()=>{
+ pendingAvatarData="";byId("avatarPreview").src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='50' fill='%23e8f7ed'/%3E%3Ccircle cx='50' cy='37' r='18' fill='%2316a34a'/%3E%3Cpath d='M17 91c3-20 16-30 33-30s30 10 33 30' fill='%2316a34a'/%3E%3C/svg%3E";
+ byId("editBtn").click();byId("profileInfo").hidden=true;byId("profileStatus").hidden=true;byId("profileForm").hidden=false;byId("editBtn").hidden=true;
+ message(byId("avatarMessage"),"La suppression sera enregistrée avec le profil.","info");
+});
+(async()=>{try{currentUser=await WebStoreDevAPI.getMe();renderProfile(currentUser);fillForm(currentUser);}catch(err){byId("profileInfo").textContent="Impossible de charger le profil : "+(err.message||"erreur inconnue");}})();
 </script>
-</body></html>
+<script src="../js/dev-shell.js"></script>\n</body></html>

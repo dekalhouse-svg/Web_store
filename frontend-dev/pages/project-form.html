@@ -14,11 +14,18 @@
 
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">WEB<span>STORE</span></div>
-    <nav class="sidebar-nav">
-      <a href="dashboard.html">Vue générale</a>
-      <a href="projects.html" class="active">Mes projets</a>
-      <a href="messages.html">Messages</a>
-    </nav>
+    <nav class="sidebar-nav" aria-label="Navigation principale">
+<a href="dashboard.html">Vue générale</a>
+<a href="projects.html">Mes projets</a>
+<a href="project-form.html">Publier un projet</a>
+<a href="statistics.html">Statistiques</a>
+<a href="comments.html">Commentaires</a>
+<a href="messages.html">Messages</a>
+<a href="notifications.html">Notifications</a>
+<a href="profile.html">Mon profil</a>
+<a href="settings.html">Paramètres et sécurité</a>
+<a href="help.html">Centre d'aide</a>
+</nav>
     <div class="sidebar-footer">
       <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
     </div>
@@ -228,5 +235,5 @@
     return typeof value === "string" && /^data:image\/(png|jpeg|webp|gif);base64,/i.test(value);
   }
 </script>
-</body>
+<script src="../js/dev-shell.js"></script>\n</body>
 </html>

@@ -14,12 +14,18 @@
 
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">WEB<span>STORE</span></div>
-    <nav class="sidebar-nav">
-      <a href="dashboard.html" class="active">Vue générale</a>
-      <a href="projects.html">Mes projets</a>
-      <a href="messages.html">Messages</a>
-            <a href="profile.html">profil</a>
-    </nav>
+    <nav class="sidebar-nav" aria-label="Navigation principale">
+<a href="dashboard.html">Vue générale</a>
+<a href="projects.html">Mes projets</a>
+<a href="project-form.html">Publier un projet</a>
+<a href="statistics.html">Statistiques</a>
+<a href="comments.html">Commentaires</a>
+<a href="messages.html">Messages</a>
+<a href="notifications.html">Notifications</a>
+<a href="profile.html">Mon profil</a>
+<a href="settings.html">Paramètres et sécurité</a>
+<a href="help.html">Centre d'aide</a>
+</nav>
     <div class="sidebar-footer">
       <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
     </div>
@@ -33,7 +39,13 @@
     </div>
 
     <div class="page">
-
+      <h1>Votre activité</h1>
+      <p style="color:var(--color-text-muted);font-size:13px;line-height:1.6;margin:0 0 20px">Retrouvez ici un aperçu de vos projets et de leur activité sur WEB STORE.</p>
+      <div class="page-toolbar">
+        <a class="btn btn-inline" href="project-form.html">Publier un projet</a>
+        <a class="btn btn-outline btn-inline" href="statistics.html">Voir les statistiques</a>
+        <a class="btn btn-outline btn-inline" href="comments.html">Commentaires</a>
+      </div>
       <div class="stat-grid" id="statGrid">
         <div class="stat-card"><div class="value">0</div><div class="label">Projets publiés</div></div>
         <div class="stat-card"><div class="value">0</div><div class="label">En attente</div></div>
@@ -97,5 +109,5 @@
     }
   }
 </script>
-</body>
+<script src="../js/dev-shell.js"></script>\n</body>
 </html>

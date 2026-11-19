@@ -14,11 +14,18 @@
 
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">WEB<span>STORE</span></div>
-    <nav class="sidebar-nav">
-      <a href="dashboard.html">Vue générale</a>
-      <a href="projects.html" class="active">Mes projets</a>
-      <a href="messages.html">Messages</a>
-    </nav>
+    <nav class="sidebar-nav" aria-label="Navigation principale">
+<a href="dashboard.html">Vue générale</a>
+<a href="projects.html">Mes projets</a>
+<a href="project-form.html">Publier un projet</a>
+<a href="statistics.html">Statistiques</a>
+<a href="comments.html">Commentaires</a>
+<a href="messages.html">Messages</a>
+<a href="notifications.html">Notifications</a>
+<a href="profile.html">Mon profil</a>
+<a href="settings.html">Paramètres et sécurité</a>
+<a href="help.html">Centre d'aide</a>
+</nav>
     <div class="sidebar-footer">
       <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
     </div>
@@ -80,8 +87,9 @@
         <td>${escapeHtml(project.type === "PWA" ? "PWA" : "WEB")}</td>
         <td><span class="status-pill status-${safeStatus(project.status)}">${escapeHtml(statusLabel(project.status))}</span></td>
         <td style="text-align:right;">
-          <a href="project-stats.html?id=${project.id}" style="margin-right:10px; color: var(--color-primary); font-size:12px;">Statistiques</a>
-          <a href="project-form.html?id=${project.id}" style="color: var(--color-text-muted); font-size:12px;">Modifier</a>
+          <a href="project-detail.html?id=${encodeURIComponent(project.id)}" style="margin-right:10px; color: var(--color-text); font-size:12px;">Détails</a>
+          <a href="project-stats.html?id=${encodeURIComponent(project.id)}" style="margin-right:10px; color: var(--color-primary); font-size:12px;">Statistiques</a>
+          <a href="project-form.html?id=${encodeURIComponent(project.id)}" style="color: var(--color-text-muted); font-size:12px;">Modifier</a>
         </td>
       </tr>
     `;
@@ -108,5 +116,5 @@
     return div.innerHTML;
   }
 </script>
-</body>
+<script src="../js/dev-shell.js"></script>\n</body>
 </html>
