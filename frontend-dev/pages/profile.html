@@ -7,18 +7,37 @@
 <link rel="manifest" href="../manifest.json"><link rel="icon" href="../icons/icon-192.png">
 <link rel="stylesheet" href="../css/style.css">
 <style>
-.profile-page{max-width:980px;margin:0 auto}.profile-intro{margin:4px 0 22px;line-height:1.6;color:#64748b}
-.profile-card{margin-bottom:22px;overflow:hidden}.profile-card .card-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid #e5e7eb}
-.profile-card .card-header h2{margin:0;line-height:1.35}.card-body{padding-top:20px}.profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 20px}
-.profile-field{min-width:0}.profile-field label{display:block;margin-bottom:8px;font-weight:600;line-height:1.4}.profile-field input{box-sizing:border-box;width:100%;min-height:44px}
-.profile-field input[readonly]{background:#f3f4f6;color:#475569}.profile-help{margin:7px 0 0;font-size:.88rem;line-height:1.45;color:#64748b}
-.profile-actions{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-top:22px}.profile-actions .btn{min-height:42px}
-.profile-status{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.profile-badge{display:inline-flex;padding:7px 11px;border-radius:999px;background:#f1f5f9;color:#334155;font-size:.9rem}
-.profile-badge.good{background:#dcfce7;color:#166534}.profile-badge.warn{background:#fef3c7;color:#92400e}
-.profile-message{margin-top:14px;padding:12px 14px;border-radius:10px;line-height:1.5}.profile-message:empty{display:none}.profile-message.success{background:#dcfce7;color:#166534}.profile-message.error{background:#fee2e2;color:#991b1b}.profile-message.info{background:#eff6ff;color:#1d4ed8}
-.avatar-editor{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.avatar-preview{width:104px;height:104px;border-radius:50%;object-fit:cover;background:#e8f7ed;border:3px solid #d1fae5}.avatar-actions{display:flex;gap:8px;flex-wrap:wrap}.avatar-actions .btn{width:auto;padding:0 16px}.avatar-file{display:none}
+.profile-page{max-width:1040px;margin:0 auto}
+.profile-page h1{margin-bottom:22px}
+.profile-card{margin-bottom:18px;overflow:hidden}
+.profile-card .card-header{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding-bottom:15px;border-bottom:1px solid #e8edf2}
+.profile-card .card-header h2{margin:0;font-size:15px;font-weight:750;color:#172033}
+.profile-card .card-body{padding-top:20px}
+.profile-identity{display:flex;align-items:center;gap:18px;padding:4px 0 20px;border-bottom:1px solid #edf1f5;margin-bottom:20px}
+.avatar-preview{width:88px;height:88px;border-radius:50%;object-fit:cover;background:#f0fdf4;border:3px solid #fff;box-shadow:0 0 0 1px #dce7df}
+.profile-identity-main{min-width:0;flex:1}
+.profile-identity-name{font-size:18px;font-weight:750;color:#172033;margin:0 0 5px;overflow-wrap:anywhere}
+.profile-identity-meta{font-size:12px;color:#64748b;margin:0 0 10px;overflow-wrap:anywhere}
+.profile-status{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.profile-badge{display:inline-flex;align-items:center;padding:6px 10px;border-radius:7px;background:#f1f5f9;color:#475569;font-size:11px;font-weight:650}
+.profile-badge.good{background:#ecfdf3;color:#16743a}.profile-badge.warn{background:#fff7e6;color:#9a6700}
+.avatar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.avatar-actions .btn{width:auto;min-height:36px;padding:0 12px;font-size:12px}.avatar-file{display:none}
+.profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.profile-field{min-width:0;padding:13px 14px;border:1px solid #e8edf2;border-radius:10px;background:#fff}
+.profile-field label{display:block;margin-bottom:7px;color:#64748b;font-size:11px;font-weight:700;letter-spacing:.02em}
+.profile-field input{box-sizing:border-box;width:100%;min-height:40px;padding:9px 11px;border:1px solid #dce4ec;border-radius:8px;font-size:13px}
+.profile-field input[readonly]{background:#f8fafc;color:#64748b}
+.profile-value{margin:0;color:#1e293b;font-size:13px;font-weight:600;overflow-wrap:anywhere;min-height:20px}
+.profile-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:18px}
+.profile-actions .btn{width:auto;min-height:40px;padding:0 16px;font-size:12px}
+.profile-message{margin-top:12px;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5}
+.profile-message:empty{display:none}.profile-message.success{background:#ecfdf3;color:#166534}.profile-message.error{background:#fef2f2;color:#991b1b}.profile-message.info{background:#eff6ff;color:#1d4ed8}
+.profile-security-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.profile-security-row p{margin:5px 0 0;color:#64748b;font-size:12px}
+.profile-security-row .btn{width:auto;min-height:39px;padding:0 14px;font-size:12px}
+.profile-password-form{padding-top:18px}
 [hidden]{display:none!important}
-@media(max-width:650px){.profile-grid{grid-template-columns:1fr;gap:15px}.profile-card .card-header{align-items:flex-start}.profile-actions{justify-content:stretch}.profile-actions .btn{flex:1 1 100%}}
+@media(max-width:650px){.profile-grid{grid-template-columns:1fr;gap:10px}.profile-identity{align-items:flex-start}.profile-actions{justify-content:stretch}.profile-actions .btn{flex:1}.profile-card .card-header{align-items:flex-start}}
 </style>
 </head>
 <body>
@@ -38,34 +57,41 @@
 </nav><div class="sidebar-footer"><button class="sidebar-logout" id="logoutBtn" type="button">Se déconnecter</button></div></aside>
 <main class="content"><header class="topbar"><button class="menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">☰</button><div class="topbar-title">Mon profil</div><div></div></header>
 <div class="page profile-page">
-<h1>Mon profil</h1><p class="profile-intro">Consultez vos informations de compte et gérez les détails de votre profil depuis cet espace.</p>
+<h1>Profil développeur</h1>
 <section class="card profile-card" aria-labelledby="infoTitle">
-<div class="card-header"><div><h2 id="infoTitle">Mes informations</h2><p class="profile-help">Modifiez vos informations personnelles en mode édition.</p></div><button class="btn" id="editBtn" type="button">Modifier mes informations</button></div>
-<div class="card-body">
-<div class="avatar-editor">
-<img id="avatarPreview" class="avatar-preview" alt="Photo de profil" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='50' fill='%23e8f7ed'/%3E%3Ccircle cx='50' cy='37' r='18' fill='%2316a34a'/%3E%3Cpath d='M17 91c3-20 16-30 33-30s30 10 33 30' fill='%2316a34a'/%3E%3C/svg%3E">
-<div><strong>Photo de profil</strong><p class="profile-help">Visible uniquement dans votre espace développeur. JPG, PNG ou WebP. La photo est redimensionnée avant l'envoi.</p>
-<div class="avatar-actions"><label class="btn btn-inline" for="avatarInput" style="display:inline-flex;align-items:center;cursor:pointer">Choisir une photo</label><input class="avatar-file" id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp"><button class="btn btn-outline btn-inline" id="removeAvatarBtn" type="button">Supprimer</button></div>
-<div id="avatarMessage" class="profile-message" role="status" aria-live="polite"></div></div>
-</div>
-<div id="profileInfo" class="empty-state">Chargement du profil…</div><div id="profileStatus" class="profile-status" hidden></div>
-<form id="profileForm" hidden><div class="profile-grid">
-<div class="profile-field"><label for="full_name">Nom complet</label><input id="full_name" name="full_name" type="text" autocomplete="name" maxlength="150"></div>
-<div class="profile-field"><label for="username">Nom d’utilisateur</label><input id="username" name="username" type="text" autocomplete="username" maxlength="150" readonly><p class="profile-help">Le nom d’utilisateur est en lecture seule.</p></div>
-<div class="profile-field"><label for="email">Adresse e-mail</label><input id="email" name="email" type="email" autocomplete="email" maxlength="254" readonly><p class="profile-help">L’adresse e-mail ne peut pas être modifiée depuis cette page.</p></div>
-<div class="profile-field"><label for="phone">Téléphone</label><input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="30"></div>
-</div><div id="profileFormMessage" class="profile-message" role="status" aria-live="polite"></div>
-<div class="profile-actions"><button class="btn" id="cancelEditBtn" type="button">Annuler</button><button class="btn" id="saveProfileBtn" type="submit">Enregistrer les informations</button></div></form>
-</div></section>
+  <div class="card-header"><h2 id="infoTitle">Informations du compte</h2><button class="btn btn-outline btn-inline" id="editBtn" type="button">Modifier le profil</button></div>
+  <div class="card-body">
+    <div class="profile-identity">
+      <img id="avatarPreview" class="avatar-preview" alt="Photo de profil" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='50' fill='%23e8f7ed'/%3E%3Ccircle cx='50' cy='37' r='18' fill='%2316a34a'/%3E%3Cpath d='M17 91c3-20 16-30 33-30s30 10 33 30' fill='%2316a34a'/%3E%3C/svg%3E">
+      <div class="profile-identity-main"><p class="profile-identity-name" id="profileDisplayName">Chargement…</p><p class="profile-identity-meta" id="profileDisplayEmail"></p><div class="avatar-actions"><label class="btn btn-outline btn-inline" for="avatarInput" style="display:inline-flex;align-items:center;justify-content:center;cursor:pointer">Changer la photo</label><input class="avatar-file" id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp"><button class="btn btn-outline btn-inline" id="removeAvatarBtn" type="button">Retirer</button></div><div id="avatarMessage" class="profile-message" role="status" aria-live="polite"></div></div>
+    </div>
+    <div id="profileInfo" class="profile-grid"><div class="profile-field">Chargement des informations…</div></div>
+    <div id="profileStatus" class="profile-status" hidden></div>
+    <form id="profileForm" hidden>
+      <div class="profile-grid">
+        <div class="profile-field"><label for="full_name">NOM COMPLET</label><input id="full_name" name="full_name" type="text" autocomplete="name" maxlength="150"></div>
+        <div class="profile-field"><label for="username">IDENTIFIANT</label><input id="username" name="username" type="text" autocomplete="username" maxlength="150" readonly></div>
+        <div class="profile-field"><label for="email">ADRESSE E-MAIL</label><input id="email" name="email" type="email" autocomplete="email" maxlength="254" readonly></div>
+        <div class="profile-field"><label for="phone">TÉLÉPHONE</label><input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="30"></div>
+      </div>
+      <div id="profileFormMessage" class="profile-message" role="status" aria-live="polite"></div>
+      <div class="profile-actions"><button class="btn btn-outline" id="cancelEditBtn" type="button">Annuler</button><button class="btn" id="saveProfileBtn" type="submit">Enregistrer</button></div>
+    </form>
+  </div>
+</section>
 <section class="card profile-card" aria-labelledby="passwordTitle">
-<div class="card-header"><div><h2 id="passwordTitle">Sécurité du compte</h2><p class="profile-help">Le mot de passe se modifie séparément des informations du profil.</p></div><button class="btn" id="togglePasswordBtn" type="button" aria-expanded="false" aria-controls="passwordForm">Changer le mot de passe</button></div>
-<div class="card-body"><form id="passwordForm" hidden><div class="profile-grid">
-<div class="profile-field"><label for="current_password">Mot de passe actuel</label><input id="current_password" type="password" autocomplete="current-password" required></div>
-<div class="profile-field"><label for="new_password">Nouveau mot de passe</label><input id="new_password" type="password" minlength="8" autocomplete="new-password" required><p class="profile-help">8 caractères minimum.</p></div>
-<div class="profile-field"><label for="confirm_password">Confirmer le nouveau mot de passe</label><input id="confirm_password" type="password" minlength="8" autocomplete="new-password" required></div>
-</div><div id="passwordMessage" class="profile-message" role="status" aria-live="polite"></div>
-<div class="profile-actions"><button class="btn" id="cancelPasswordBtn" type="button">Annuler</button><button class="btn" id="savePasswordBtn" type="submit">Enregistrer le mot de passe</button></div></form></div>
-</section></div></main></div>
+  <div class="card-header"><h2 id="passwordTitle">Sécurité du compte</h2></div>
+  <div class="card-body">
+    <div class="profile-security-row"><div><strong style="font-size:13px;color:#1e293b">Mot de passe</strong><p>Dernier rempart de sécurité de votre compte développeur.</p></div><button class="btn btn-outline" id="togglePasswordBtn" type="button" aria-expanded="false" aria-controls="passwordForm">Modifier le mot de passe</button></div>
+    <form id="passwordForm" class="profile-password-form" hidden><div class="profile-grid">
+      <div class="profile-field"><label for="current_password">MOT DE PASSE ACTUEL</label><input id="current_password" type="password" autocomplete="current-password" required></div>
+      <div class="profile-field"><label for="new_password">NOUVEAU MOT DE PASSE</label><input id="new_password" type="password" minlength="8" autocomplete="new-password" required></div>
+      <div class="profile-field"><label for="confirm_password">CONFIRMATION</label><input id="confirm_password" type="password" minlength="8" autocomplete="new-password" required></div>
+    </div><div id="passwordMessage" class="profile-message" role="status" aria-live="polite"></div>
+    <div class="profile-actions"><button class="btn btn-outline" id="cancelPasswordBtn" type="button">Annuler</button><button class="btn" id="savePasswordBtn" type="submit">Mettre à jour</button></div></form>
+  </div>
+</section>
+</div>
 <script src="../js/config.js"></script><script src="../js/api.js"></script><script src="../js/auth.js"></script>
 <script>
 const byId=id=>document.getElementById(id);
@@ -75,14 +101,16 @@ let pendingAvatarData=null;
 function message(el,text,type="info"){el.textContent=text||"";el.className="profile-message"+(text?" "+type:"");}
 function renderProfile(u){
  byId("avatarPreview").src=u.avatar_data||"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2750%27 fill=%27%23e8f7ed%27/%3E%3Ccircle cx=%2750%27 cy=%2737%27 r=%2718%27 fill=%27%2316a34a%27/%3E%3Cpath d=%27M17 91c3-20 16-30 33-30s30 10 33 30%27 fill=%27%2316a34a%27/%3E%3C/svg%3E";
- byId("profileInfo").className="";
- byId("profileInfo").innerHTML=`<div class="profile-grid">
- <div><strong>Nom complet</strong><p>${esc(u.full_name||"Non renseigné")}</p></div>
- <div><strong>Nom d’utilisateur</strong><p>${esc(u.username||"Non renseigné")}</p></div>
- <div><strong>Adresse e-mail</strong><p>${esc(u.email||"Non renseignée")}</p></div>
- <div><strong>Téléphone</strong><p>${esc(u.phone||"Non renseigné")}</p></div></div>`;
+ byId("profileInfo").className="profile-grid";
+ byId("profileDisplayName").textContent=u.full_name||u.username||"Compte développeur";
+ byId("profileDisplayEmail").textContent=u.email||"";
+ byId("profileInfo").innerHTML=`
+ <div class="profile-field"><label>NOM COMPLET</label><p class="profile-value">${esc(u.full_name||"Non renseigné")}</p></div>
+ <div class="profile-field"><label>IDENTIFIANT</label><p class="profile-value">${esc(u.username||"Non renseigné")}</p></div>
+ <div class="profile-field"><label>ADRESSE E-MAIL</label><p class="profile-value">${esc(u.email||"Non renseignée")}</p></div>
+ <div class="profile-field"><label>TÉLÉPHONE</label><p class="profile-value">${esc(u.phone||"Non renseigné")}</p></div>`;
  byId("profileStatus").hidden=false;
- byId("profileStatus").innerHTML=`<span class="profile-badge">Statut : ${esc(u.status||"Non renseigné")}</span><span class="profile-badge ${u.email_verified?"good":"warn"}">E-mail : ${u.email_verified?"vérifié":"non vérifié"}</span>`;
+ byId("profileStatus").innerHTML=`<span class="profile-badge ${u.status==="ACTIF"?"good":"warn"}">Compte ${esc(u.status||"Non renseigné").toLowerCase()}</span><span class="profile-badge ${u.email_verified?"good":"warn"}">E-mail ${u.email_verified?"vérifié":"non vérifié"}</span>`;
 }
 function fillForm(u){byId("full_name").value=u.full_name||"";byId("username").value=u.username||"";byId("email").value=u.email||"";byId("phone").value=u.phone||"";}
 function closeEditor(){pendingAvatarData=null;if(currentUser)renderProfile(currentUser);byId("profileForm").hidden=true;byId("profileInfo").hidden=false;byId("profileStatus").hidden=false;byId("editBtn").hidden=false;message(byId("profileFormMessage"),"");}

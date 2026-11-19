@@ -3,111 +3,125 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard — WEB STORE Dev</title>
-<meta name="theme-color" content="#12291B">
+<title>Vue générale — WEB STORE Dev</title>
+<meta name="theme-color" content="#16A34A">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../icons/icon-192.png">
 <link rel="stylesheet" href="../css/style.css">
+<style>
+.dashboard-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px}
+.dashboard-actions .btn{min-height:42px;padding:0 16px}
+.overview-card{margin-top:22px}
+.overview-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.overview-head h2{font-size:16px;margin:0}
+.period-tabs{display:flex;gap:6px;padding:4px;background:#f1f5f9;border-radius:11px}
+.period-tab{border:0;background:transparent;color:#64748b;border-radius:8px;padding:9px 13px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.period-tab[aria-pressed="true"]{background:#fff;color:#15803d;box-shadow:0 1px 4px rgba(15,23,42,.10)}
+.overview-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.overview-metric{border:1px solid #e2e8f0;border-radius:12px;padding:16px;min-width:0;background:#fff}
+.overview-metric .metric-value{font-size:25px;font-weight:750;letter-spacing:-.6px;color:#0f172a;line-height:1.2}
+.overview-metric .metric-label{font-size:12px;color:#64748b;margin-top:7px;line-height:1.4}
+.overview-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:15px;color:#64748b;font-size:11px}
+.overview-state{padding:22px;text-align:center;color:#64748b;font-size:13px}
+@media(max-width:1000px){.overview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:620px){.overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-head{align-items:flex-start}.period-tabs{width:100%}.period-tab{flex:1;padding:9px 5px}.overview-metric{padding:13px}.overview-metric .metric-value{font-size:22px}}
+</style>
 </head>
 <body>
 <div class="app-shell">
-
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">WEB<span>STORE</span></div>
     <nav class="sidebar-nav" aria-label="Navigation principale">
-<a href="dashboard.html">Vue générale</a>
-<a href="projects.html">Mes projets</a>
-<a href="project-form.html">Publier un projet</a>
-<a href="statistics.html">Statistiques</a>
-<a href="comments.html">Commentaires</a>
-<a href="messages.html">Messages</a>
-<a href="notifications.html">Notifications</a>
-<a href="profile.html">Mon profil</a>
-<a href="settings.html">Paramètres et sécurité</a>
-<a href="help.html">Centre d'aide</a>
-</nav>
-    <div class="sidebar-footer">
-      <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
-    </div>
+      <a href="dashboard.html">Vue générale</a><a href="projects.html">Mes projets</a>
+      <a href="project-form.html">Publier un projet</a><a href="statistics.html">Statistiques</a>
+      <a href="comments.html">Commentaires</a><a href="messages.html">Messages</a>
+      <a href="notifications.html">Notifications</a><a href="profile.html">Mon profil</a>
+      <a href="settings.html">Paramètres et sécurité</a><a href="help.html">Centre d'aide</a>
+    </nav>
+    <div class="sidebar-footer"><button class="sidebar-logout" id="logoutBtn" type="button">Se déconnecter</button></div>
   </aside>
-
-  <div class="content">
-    <div class="topbar">
-      <button class="menu-toggle" id="menuToggle">☰</button>
-      <div class="topbar-title">Vue générale</div>
-      <div></div>
-    </div>
-
+  <main class="content">
+    <header class="topbar"><button class="menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">☰</button><div class="topbar-title">Vue générale</div><div></div></header>
     <div class="page">
-      <h1>Votre activité</h1>
-      <p style="color:var(--color-text-muted);font-size:13px;line-height:1.6;margin:0 0 20px">Retrouvez ici un aperçu de vos projets et de leur activité sur WEB STORE.</p>
-      <div class="page-toolbar">
+      <h1>Vue générale</h1>
+      <p style="color:var(--color-text-muted);font-size:13px;line-height:1.6;margin:0 0 20px">Suivez les performances de l’ensemble de vos projets.</p>
+      <div class="dashboard-actions">
         <a class="btn btn-inline" href="project-form.html">Publier un projet</a>
         <a class="btn btn-outline btn-inline" href="statistics.html">Voir les statistiques</a>
         <a class="btn btn-outline btn-inline" href="comments.html">Commentaires</a>
       </div>
       <div class="stat-grid" id="statGrid">
-        <div class="stat-card"><div class="value">0</div><div class="label">Projets publiés</div></div>
-        <div class="stat-card"><div class="value">0</div><div class="label">En attente</div></div>
-        <div class="stat-card"><div class="value">0</div><div class="label">Visites des fiches</div></div>
-        <div class="stat-card"><div class="value">0</div><div class="label">Messages non lus</div></div>
+        <div class="stat-card"><div class="value">…</div><div class="label">Projets publiés</div></div>
+        <div class="stat-card"><div class="value">…</div><div class="label">En attente</div></div>
+        <div class="stat-card"><div class="value">…</div><div class="label">Visites des fiches</div></div>
+        <div class="stat-card"><div class="value">…</div><div class="label">Messages non lus</div></div>
       </div>
-
-      <div class="card">
-        <div class="card-header">
-          <h2>Activité récente</h2>
+      <section class="card overview-card" aria-labelledby="overviewTitle">
+        <div class="overview-head">
+          <h2 id="overviewTitle">Performance globale des projets</h2>
+          <div class="period-tabs" role="group" aria-label="Période des statistiques">
+            <button class="period-tab" type="button" data-period="week" aria-pressed="true">Cette semaine</button>
+            <button class="period-tab" type="button" data-period="month" aria-pressed="false">Ce mois</button>
+            <button class="period-tab" type="button" data-period="year" aria-pressed="false">Cette année</button>
+          </div>
         </div>
-        <div id="activityList" class="empty-state">Aucune activité récente.</div>
-      </div>
-
+        <div id="overviewStats" class="overview-grid"><div class="overview-state">Chargement des statistiques…</div></div>
+        <div class="overview-foot"><span id="overviewProjectCount">—</span><span>Données cumulées de tous vos projets</span></div>
+      </section>
     </div>
-  </div>
+  </main>
 </div>
-
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
 <script>
-  loadDashboard();
-
-  async function loadDashboard() {
-    try {
-      const stats = await WebStoreDevAPI.getDashboardStats();
-      renderStats(stats);
-    } catch (err) {
-      // Pas de backend disponible pour le moment : les cartes restent à 0,
-      // conformément à la règle "ne jamais inventer de statistiques".
-      console.warn("Statistiques indisponibles :", err.message);
-    }
-  }
-
-  function renderStats(stats) {
-    const cards = [
-      { value: stats.published_count ?? 0, label: "Projets publiés" },
-      { value: stats.pending_count ?? 0, label: "En attente" },
-      { value: stats.total_views ?? 0, label: "Visites des fiches" },
-      { value: stats.unread_messages ?? 0, label: "Messages non lus" },
+const numberFormat=value=>Number(value||0).toLocaleString("fr-FR");
+let dashboardProjects=[];
+let selectedPeriod="week";
+const metricDefinitions=[
+  ["sheet_views","Visites des fiches"],
+  ["visit_clicks","Clics vers les sites"],
+  ["install_clicks","Clics sur Installer"],
+  ["comments_count","Commentaires"],
+  ["favorites_count","Ajouts aux favoris"]
+];
+async function loadDashboard(){
+  const statsPromise=WebStoreDevAPI.getDashboardStats();
+  const projectsPromise=WebStoreDevAPI.getProjects();
+  try{
+    const [stats,projects]=await Promise.all([statsPromise,projectsPromise]);
+    dashboardProjects=Array.isArray(projects)?projects:[];
+    const cards=[
+      {value:stats.published_count??0,label:"Projets publiés"},
+      {value:stats.pending_count??0,label:"En attente"},
+      {value:stats.total_views??0,label:"Visites des fiches"},
+      {value:stats.unread_messages??0,label:"Messages non lus"}
     ];
-
-    const grid = document.getElementById("statGrid");
-    grid.innerHTML = cards
-      .map(
-        (c) => `<div class="stat-card"><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
-      )
-      .join("");
-
-    const activityList = document.getElementById("activityList");
-    if (stats.recent_activity && stats.recent_activity.length > 0) {
-      activityList.className = "";
-      activityList.replaceChildren();
-      stats.recent_activity.forEach((item) => {
-        const row = document.createElement("div");
-        row.style.cssText = "padding:8px 0; font-size:13px; border-bottom:1px solid var(--color-border);";
-        row.textContent = item.label || "Activité";
-        activityList.appendChild(row);
-      });
-    }
+    document.getElementById("statGrid").innerHTML=cards.map(c=>`<div class="stat-card"><div class="value">${numberFormat(c.value)}</div><div class="label">${c.label}</div></div>`).join("");
+    await loadOverview(selectedPeriod);
+  }catch(err){
+    document.getElementById("overviewStats").innerHTML=`<div class="overview-state">Impossible de charger les données. ${String(err.message||"")}</div>`;
+    console.warn("Statistiques indisponibles :",err);
   }
+}
+async function loadOverview(period){
+  const target=document.getElementById("overviewStats");
+  target.innerHTML='<div class="overview-state">Mise à jour des statistiques…</div>';
+  try{
+    const results=await Promise.all(dashboardProjects.map(project=>WebStoreDevAPI.getProjectStats(project.id,{period})));
+    const totals=Object.fromEntries(metricDefinitions.map(([key])=>[key,0]));
+    results.forEach(item=>{if(!item)return;Object.keys(totals).forEach(key=>totals[key]+=Number(item[key]||0));});
+    target.innerHTML=metricDefinitions.map(([key,label])=>`<div class="overview-metric"><div class="metric-value">${numberFormat(totals[key])}</div><div class="metric-label">${label}</div></div>`).join("");
+    document.getElementById("overviewProjectCount").textContent=`${dashboardProjects.length} projet${dashboardProjects.length>1?"s":""} pris en compte`;
+  }catch(err){target.innerHTML=`<div class="overview-state">Statistiques indisponibles : ${String(err.message||"")}</div>`;}
+}
+document.querySelectorAll(".period-tab").forEach(button=>button.addEventListener("click",()=>{
+  selectedPeriod=button.dataset.period;
+  document.querySelectorAll(".period-tab").forEach(tab=>tab.setAttribute("aria-pressed",String(tab===button)));
+  loadOverview(selectedPeriod);
+}));
+loadDashboard();
 </script>
-<script src="../js/dev-shell.js"></script>\n</body>
+<script src="../js/dev-shell.js"></script>
+</body>
 </html>
