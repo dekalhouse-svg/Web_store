@@ -371,3 +371,63 @@ select {
 @media (min-width: 700px) {
   .stat-grid { grid-template-columns: repeat(4, 1fr); }
 }
+
+
+/* WEB STORE Dev — modernisation visuelle */
+:root{
+  --color-bg:#F8FAFC;
+  --color-surface:#FFFFFF;
+  --color-border:#E2E8F0;
+  --color-text:#1E293B;
+  --color-text-muted:#64748B;
+  --color-primary:#16A34A;
+  --color-primary-dark:#15803D;
+  --color-primary-soft:#DCFCE7;
+  --color-sidebar-bg:#FFFFFF;
+  --color-sidebar-text:#475569;
+  --color-sidebar-active:#F0FDF4;
+}
+body{background:#F8FAFC;color:#1E293B}
+.sidebar{background:#fff;color:#475569;border-right:1px solid #e2e8f0;padding:22px 14px}
+.sidebar-logo{color:#1e293b;font-size:19px;letter-spacing:-.5px}
+.sidebar-logo span{color:#16a34a}
+.sidebar-nav a{padding:12px 13px;border-radius:10px;color:#475569;font-size:13px;transition:background .15s,color .15s}
+.sidebar-nav a:hover,.sidebar-nav a.active{background:#f0fdf4;color:#15803d}
+.sidebar-nav a.active{font-weight:700}
+.sidebar-footer{color:#64748b}
+.sidebar-logout{border-color:#e2e8f0;color:#475569;background:#fff}
+.sidebar-logout:hover{background:#f8fafc;color:#b91c1c}
+.topbar{height:68px;padding:0 28px;background:rgba(255,255,255,.96);border-bottom-color:#e2e8f0}
+.topbar-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.page{padding:28px;max-width:1180px}
+.page h1{font-size:25px;letter-spacing:-.6px;margin:0 0 7px}
+.card{border-color:#e2e8f0;border-radius:16px;padding:21px;box-shadow:0 2px 10px rgba(15,23,42,.025)}
+.card-header h2{font-size:15px;font-weight:700}
+.stat-grid{gap:15px}
+.stat-card{border-color:#e2e8f0;border-radius:15px;padding:19px;box-shadow:0 2px 10px rgba(15,23,42,.025)}
+.stat-card .value{font-size:28px;letter-spacing:-.7px;color:#0f172a}
+.stat-card .label{font-size:12px;line-height:1.5}
+.btn{border-radius:10px;background:#16a34a;font-weight:650;transition:background .15s,transform .15s}
+.btn:hover{background:#15803d}
+.btn-outline{background:#fff;color:#334155;border:1px solid #e2e8f0}
+.btn-outline:hover{background:#f8fafc}
+input,textarea,select{border-color:#dbe3ec;border-radius:10px}
+input:focus,textarea:focus,select:focus{outline:2px solid rgba(22,163,74,.15);border-color:#16a34a}
+table{font-size:13px}
+th{padding:12px 9px;background:#f8fafc}
+td{padding:14px 9px}
+.message-item{padding:15px 10px;border-radius:10px}
+.message-item:hover{background:#f8fafc}
+.menu-toggle{border-color:#e2e8f0;color:#334155}
+@media(max-width:860px){
+ .sidebar{box-shadow:8px 0 28px rgba(15,23,42,.08)}
+ .topbar{padding:0 16px}
+ .page{padding:18px 14px}
+ .card{padding:16px}
+}
+@media(max-width:520px){
+ .stat-grid{grid-template-columns:1fr 1fr;gap:9px}
+ .stat-card{padding:14px}
+ .stat-card .value{font-size:23px}
+ .topbar-title{font-size:14px}
+}
