@@ -19,7 +19,7 @@ from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.utils.text import slugify
-from .models import DeveloperProfile, Category, Project, Comment, Report, Event, AuthToken, Message, ModerationLog, Visitor, EmailCode, Favorite, CommentReport, VisitorActivity, CategoryRelation, SponsoredCampaign, SponsoredCampaignEvent, LoginAttemptByIP, RateLimitBucket
+from .models import DeveloperProfile, Category, Project, Comment, Report, Event, AuthToken, Message, ModerationLog, Visitor, EmailCode, Favorite, CommentReport, VisitorActivity, CategoryRelation, SponsoredCampaign, SponsoredCampaignEvent, LoginAttemptByIP, RateLimitBucket, AdminPasskey, AdminAuthChallenge
 
 def json_body(request):
     import json
@@ -49,6 +49,7 @@ def issue_token(user, kind):
     return raw
 
 API_TOKEN_TTL = timedelta(days=30)
+ADMIN_API_TOKEN_TTL = timedelta(hours=12)
 
 
 def _client_ip(request):
@@ -108,7 +109,8 @@ def auth_user(request, kind=None):
     if not token: return None
     if kind and token.kind != kind: return None
     if not token.user.is_active: return None
-    if token.created_at <= timezone.now() - API_TOKEN_TTL:
+    token_ttl = ADMIN_API_TOKEN_TTL if token.kind == "admin" else API_TOKEN_TTL
+    if token.created_at <= timezone.now() - token_ttl:
         token.delete()
         return None
     token.last_used_at=timezone.now(); token.save(update_fields=["last_used_at"])
@@ -1357,6 +1359,280 @@ def admin_logout(request):
     return HttpResponse(status=204)
 
 
+# --- Authentification forte de l'administration (WebAuthn / Passkeys) ---
+ADMIN_WEBAUTHN_RP_ID = "store-by-dekal.onrender.com"
+ADMIN_WEBAUTHN_ORIGIN = "https://store-by-dekal.onrender.com"
+ADMIN_WEBAUTHN_RP_NAME = "WEB STORE Administration"
+ADMIN_WEBAUTHN_TTL = timedelta(minutes=5)
+
+
+def _b64u(data):
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+
+def _unb64u(value):
+    return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+
+
+def _webauthn_imports():
+    from webauthn import (generate_registration_options, verify_registration_response,
+                         generate_authentication_options, verify_authentication_response,
+                         options_to_json)
+    from webauthn.helpers.structs import (AuthenticatorSelectionCriteria, AuthenticatorAttachment,
+        ResidentKeyRequirement, UserVerificationRequirement, PublicKeyCredentialDescriptor)
+    return (generate_registration_options, verify_registration_response,
+            generate_authentication_options, verify_authentication_response, options_to_json,
+            AuthenticatorSelectionCriteria, AuthenticatorAttachment, ResidentKeyRequirement,
+            UserVerificationRequirement, PublicKeyCredentialDescriptor)
+
+
+def _admin_webauthn_ready():
+    return AdminPasskey.objects.exists()
+
+
+def _challenge_row(user, purpose, challenge="", token_hash=""):
+    AdminAuthChallenge.objects.filter(expires_at__lte=timezone.now()).delete()
+    return AdminAuthChallenge.objects.create(
+        user=user, purpose=purpose, challenge=challenge, token_hash=token_hash,
+        expires_at=timezone.now() + ADMIN_WEBAUTHN_TTL,
+    )
+
+
+def _admin_mfa_row(request):
+    body = json_body(request)
+    token = str(body.get("mfa_token", ""))
+    if not token or len(token) > 160:
+        return None, body
+    row = AdminAuthChallenge.objects.select_related("user").filter(
+        token_hash=hash_token(token), purpose="login", expires_at__gt=timezone.now()
+    ).first()
+    return row, body
+
+
+@csrf_exempt
+@admin_only
+def admin_me(request):
+    if request.method != "GET":
+        return err("Méthode non autorisée.", 405)
+    u = request.api_user
+    return ok({"id": u.id, "username": u.username, "email": u.email,
+               "full_name": u.get_full_name(), "passkeys": AdminPasskey.objects.filter(user=u).count()})
+
+
+@csrf_exempt
+@admin_only
+def admin_password_change(request):
+    if request.method != "POST":
+        return err("Méthode non autorisée.", 405)
+    body = json_body(request)
+    current = str(body.get("current_password", ""))
+    new = str(body.get("new_password", ""))
+    confirm = str(body.get("confirm_password", ""))
+    user = request.api_user
+    if not user.check_password(current):
+        return err("Le mot de passe actuel est incorrect.", 400)
+    if new != confirm:
+        return err("Les nouveaux mots de passe ne correspondent pas.", 400)
+    if len(new) < 8:
+        return err("Le nouveau mot de passe doit contenir au moins 8 caractères.", 400)
+    try:
+        validate_password(new, user=user)
+    except ValidationError as exc:
+        return err(" ".join(exc.messages), 400)
+    user.set_password(new)
+    user.save(update_fields=["password"])
+    AuthToken.objects.filter(user=user, kind="admin").delete()
+    return ok({"message": "Mot de passe modifié. Reconnectez-vous."})
+
+
+@csrf_exempt
+@admin_only
+def admin_passkey_list(request):
+    if request.method != "GET":
+        return err("Méthode non autorisée.", 405)
+    return ok([{"id": p.id, "device_name": p.device_name or "Appareil autorisé",
+                "created_at": p.created_at.isoformat(), "last_used_at": p.last_used_at.isoformat() if p.last_used_at else None}
+               for p in AdminPasskey.objects.filter(user=request.api_user)])
+
+
+@csrf_exempt
+@admin_only
+def admin_passkey_register_options(request):
+    if request.method != "POST":
+        return err("Méthode non autorisée.", 405)
+    body = json_body(request)
+    if not request.api_user.check_password(str(body.get("current_password", ""))):
+        return err("Confirmez votre mot de passe avant d'ajouter une clé biométrique.", 403)
+    try:
+        (gen_reg, _, _, _, options_json, selection, attachment, resident, verification, descriptor) = _webauthn_imports()
+        existing = [descriptor(id=_unb64u(p.credential_id)) for p in AdminPasskey.objects.filter(user=request.api_user)]
+        options = gen_reg(
+            rp_id=ADMIN_WEBAUTHN_RP_ID, rp_name=ADMIN_WEBAUTHN_RP_NAME,
+            user_id=str(request.api_user.pk).encode("utf-8"),
+            user_name=request.api_user.email or request.api_user.username,
+            user_display_name=request.api_user.get_full_name() or request.api_user.username,
+            exclude_credentials=existing,
+            authenticator_selection=selection(
+                authenticator_attachment=attachment.PLATFORM,
+                resident_key=resident.PREFERRED,
+                user_verification=verification.REQUIRED,
+            ),
+        )
+        row = _challenge_row(request.api_user, "register", _b64u(options.challenge))
+        return ok({"challenge_id": row.id, "options": json.loads(options_json(options))})
+    except Exception:
+        return err("Impossible de préparer l'enregistrement biométrique. Vérifiez la configuration WebAuthn.", 500)
+
+
+@csrf_exempt
+@admin_only
+def admin_passkey_register_verify(request):
+    if request.method != "POST":
+        return err("Méthode non autorisée.", 405)
+    body = json_body(request)
+    row = AdminAuthChallenge.objects.filter(id=body.get("challenge_id"), user=request.api_user,
+        purpose="register", expires_at__gt=timezone.now()).first()
+    if not row:
+        return err("La demande d'enregistrement a expiré. Recommencez.", 400)
+    row.delete()
+    credential = body.get("credential")
+    if not isinstance(credential, dict) or credential.get("authenticatorAttachment") != "platform":
+        return err("Utilisez l'empreinte ou la reconnaissance faciale intégrée à cet appareil.", 400)
+    try:
+        (_, verify_reg, _, _, _, *_) = _webauthn_imports()
+        verified = verify_reg(
+            credential=credential, expected_challenge=_unb64u(row.challenge),
+            expected_rp_id=ADMIN_WEBAUTHN_RP_ID, expected_origin=ADMIN_WEBAUTHN_ORIGIN,
+            require_user_verification=True,
+        )
+        credential_id = _b64u(verified.credential_id)
+        if AdminPasskey.objects.filter(credential_id=credential_id).exists():
+            return err("Cette clé est déjà enregistrée.", 409)
+        device_name = str(body.get("device_name", ""))[:100].strip()
+        AdminPasskey.objects.create(user=request.api_user, credential_id=credential_id,
+            public_key=_b64u(verified.credential_public_key), sign_count=verified.sign_count,
+            device_name=device_name)
+        return ok({"message": "Vérification biométrique enregistrée avec succès."}, 201)
+    except Exception:
+        return err("Vérification biométrique échouée. Réessayez sur cet appareil.", 400)
+
+
+@csrf_exempt
+@admin_only
+def admin_passkey_delete(request, passkey_id):
+    if request.method != "DELETE":
+        return err("Méthode non autorisée.", 405)
+    if AdminPasskey.objects.filter(user=request.api_user).count() <= 1:
+        return err("Conservez au moins une clé autorisée. Configurez une autre méthode avant de supprimer celle-ci.", 400)
+    deleted, _ = AdminPasskey.objects.filter(id=passkey_id, user=request.api_user).delete()
+    if not deleted:
+        return err("Clé introuvable.", 404)
+    return ok({"message": "Clé biométrique révoquée."})
+
+
+@csrf_exempt
+def admin_passkey_login_verify(request):
+    if request.method != "POST":
+        return err("Méthode non autorisée.", 405)
+    if _rate_limited(request, "admin_passkey_verify", 10, 300):
+        return err("Trop de tentatives. Réessayez plus tard.", 429)
+    body = json_body(request)
+    token = str(body.get("mfa_token", ""))
+    if not token or len(token) > 160:
+        return err("Cette demande de connexion a expiré. Recommencez.", 401)
+    with transaction.atomic():
+        row = AdminAuthChallenge.objects.select_for_update().select_related("user").filter(
+            token_hash=hash_token(token), purpose="login", expires_at__gt=timezone.now()
+        ).first()
+        if not row:
+            return err("Cette demande de connexion a expiré. Recommencez.", 401)
+        if row.attempts >= 5:
+            row.delete()
+            return err("Trop de tentatives. Recommencez la connexion.", 429)
+        try:
+            credential = body.get("credential")
+            if not isinstance(credential, dict):
+                raise ValueError("credential missing")
+            credential_id = str(credential.get("id", ""))
+            passkey = AdminPasskey.objects.get(user=row.user, credential_id=credential_id)
+            (_, _, _, verify_auth, *_) = _webauthn_imports()
+            verified = verify_auth(
+                credential=credential, expected_challenge=_unb64u(row.challenge),
+                expected_rp_id=ADMIN_WEBAUTHN_RP_ID, expected_origin=ADMIN_WEBAUTHN_ORIGIN,
+                credential_public_key=_unb64u(passkey.public_key),
+                credential_current_sign_count=passkey.sign_count, require_user_verification=True,
+            )
+            passkey.sign_count = verified.new_sign_count
+            passkey.last_used_at = timezone.now()
+            passkey.save(update_fields=["sign_count", "last_used_at"])
+            user = row.user
+            row.delete()
+            return ok({"token": issue_token(user, "admin"), "user": {"id": user.id, "email": user.email,
+                       "full_name": user.get_full_name()}})
+        except Exception:
+            row.attempts += 1
+            row.save(update_fields=["attempts"])
+            return err("Authentification biométrique refusée. Vérifiez votre appareil.", 401)
+
+
+@csrf_exempt
+def admin_passkey_fallback_send(request):
+    if request.method != "POST":
+        return err("Méthode non autorisée.", 405)
+    if _rate_limited(request, "admin_mfa_email_send", 3, 900):
+        return err("Trop de demandes de code. Réessayez plus tard.", 429)
+    row, _ = _admin_mfa_row(request)
+    if not row:
+        return err("Cette demande de connexion a expiré. Recommencez.", 401)
+    if row.email_sent_at and row.email_sent_at > timezone.now() - timedelta(seconds=60):
+        return err("Attendez une minute avant de demander un nouveau code.", 429)
+    code = f"{secrets.randbelow(1000000):06d}"
+    row.email_code_hash = hmac.new(settings.SECRET_KEY.encode(), f"{row.user.pk}:admin_mfa:{code}".encode(), hashlib.sha256).hexdigest()
+    row.email_sent_at = timezone.now()
+    row.attempts = 0
+    row.save(update_fields=["email_code_hash", "email_sent_at", "attempts"])
+    subject = "Code de secours — WEB STORE Administration"
+    text_content = f"Votre code de secours est {code}. Il expire dans 5 minutes. Ne le partagez avec personne."
+    html_content = f"<p>Votre code de secours WEB STORE est :</p><p style='font-size:28px;font-weight:bold;letter-spacing:6px'>{code}</p><p>Il expire dans 5 minutes. Ne le partagez avec personne.</p>"
+    if not send_transactional_email(row.user.email, subject, text_content, html_content):
+        row.email_code_hash = ""
+        row.save(update_fields=["email_code_hash"])
+        return err("Le code e-mail n'a pas pu être envoyé. Contactez l'administrateur technique.", 503)
+    return ok({"message": "Un code temporaire a été envoyé à l'adresse e-mail de l'administrateur."})
+
+
+@csrf_exempt
+def admin_passkey_fallback_verify(request):
+    if request.method != "POST":
+        return err("Méthode non autorisée.", 405)
+    body = json_body(request)
+    token = str(body.get("mfa_token", ""))
+    if not token or len(token) > 160:
+        return err("Cette demande de connexion a expiré. Recommencez.", 401)
+    with transaction.atomic():
+        row = AdminAuthChallenge.objects.select_for_update().select_related("user").filter(
+            token_hash=hash_token(token), purpose="login", expires_at__gt=timezone.now()
+        ).first()
+        if not row or not row.email_code_hash:
+            return err("Demandez d'abord un code de secours.", 400)
+        if not row.email_sent_at or row.email_sent_at < timezone.now() - ADMIN_WEBAUTHN_TTL:
+            row.delete()
+            return err("Le code de secours a expiré.", 400)
+        row.attempts += 1
+        code = str(body.get("code", "")).strip()
+        expected = hmac.new(settings.SECRET_KEY.encode(), f"{row.user.pk}:admin_mfa:{code}".encode(), hashlib.sha256).hexdigest()
+        if row.attempts > 5 or not hmac.compare_digest(expected, row.email_code_hash):
+            if row.attempts >= 5:
+                row.delete()
+            else:
+                row.save(update_fields=["attempts"])
+            return err("Code incorrect ou expiré.", 401)
+        user = row.user
+        row.delete()
+        return ok({"token": issue_token(user, "admin"), "user": {"id": user.id, "email": user.email,
+                   "full_name": user.get_full_name()}})
+
+
 @csrf_exempt
 def admin_login(request):
     if request.method != "POST":
@@ -1372,6 +1648,20 @@ def admin_login(request):
         return err("Trop de tentatives. Réessayez dans 45 secondes.", 429)
     if not user:
         return err("Identifiants invalides.", 401)
+    passkeys = list(AdminPasskey.objects.filter(user=user))
+    if passkeys:
+        try:
+            (_, _, gen_auth, _, options_json, *_) = _webauthn_imports()
+            from webauthn.helpers.structs import PublicKeyCredentialDescriptor, UserVerificationRequirement
+            options = gen_auth(rp_id=ADMIN_WEBAUTHN_RP_ID,
+                allow_credentials=[PublicKeyCredentialDescriptor(id=_unb64u(p.credential_id)) for p in passkeys],
+                user_verification=UserVerificationRequirement.REQUIRED)
+            raw_mfa = secrets.token_urlsafe(48)
+            challenge = _challenge_row(user, "login", _b64u(options.challenge), hash_token(raw_mfa))
+            return ok({"mfa_required": True, "mfa_token": raw_mfa,
+                       "options": json.loads(options_json(options)), "expires_in": 300})
+        except Exception:
+            return err("Impossible de préparer la vérification biométrique. Réessayez.", 503)
     return ok({"token": issue_token(user, "admin"), "user": {"id": user.id, "email": user.email, "full_name": user.get_full_name()}})
 
 @csrf_exempt

@@ -258,3 +258,31 @@ class SponsoredCampaignEvent(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [models.Index(fields=["campaign", "event_type", "created_at"], name="store_scamp_evt_stats_idx")]
+
+
+class AdminPasskey(models.Model):
+    """Clé publique WebAuthn autorisée pour le compte administrateur."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="admin_passkeys")
+    credential_id = models.CharField(max_length=2048, unique=True)
+    public_key = models.TextField()
+    sign_count = models.PositiveBigIntegerField(default=0)
+    device_name = models.CharField(max_length=100, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class AdminAuthChallenge(models.Model):
+    """Challenge temporaire à usage unique pour enrôlement et MFA admin."""
+    PURPOSES = [("register", "Enregistrement"), ("login", "Connexion")]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="admin_auth_challenges")
+    purpose = models.CharField(max_length=12, choices=PURPOSES)
+    challenge = models.CharField(max_length=256, blank=True, default="")
+    token_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    email_code_hash = models.CharField(max_length=64, blank=True, default="")
+    email_sent_at = models.DateTimeField(null=True, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    expires_at = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
