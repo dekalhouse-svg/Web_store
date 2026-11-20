@@ -19,8 +19,8 @@
       <a href="project-analytics.html">Performances projets</a><a href="category-relations.html">Catégories voisines</a><a href="visitor-analytics.html">Données visiteurs</a>
       <a href="developers.html">Développeurs</a>
       <a href="publications.html">Publications</a>
-      <a href="messages.html">messages</a>
-      <a href="profile.html">profil</a>
+      <a href="messages.html" data-webstore-messages="admin">Messages</a>
+      <a href="profile.html">Profil</a>
     </nav>
     <div class="sidebar-footer">
       <button class="sidebar-logout" id="logoutBtn">Se déconnecter</button>
@@ -37,7 +37,7 @@
     <div class="page">
       <div class="stat-grid" id="statGrid">
         <div class="stat-card"><div class="value">0</div><div class="label">Développeurs</div></div>
-        <div class="stat-card"><div class="value">0</div><div class="label">utilisateurs normal</div></div>
+        <div class="stat-card"><div class="value">0</div><div class="label">Visiteurs enregistrés</div></div>
         <div class="stat-card"><div class="value">0</div><div class="label">Projets publiés</div></div>
         <div class="stat-card"><div class="value">0</div><div class="label">En attente de modération</div></div>
         <div class="stat-card"><div class="value">0</div><div class="label">Signalements ouverts</div></div>
@@ -51,7 +51,7 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>Visite générale</h2></div>
+        <div class="card-header"><h2>Activité des visiteurs</h2></div>
         <div class="stat-grid">
           <div class="stat-card"><div class="value" id="generalVisitors">0</div><div class="label">Visiteurs uniques</div></div>
           <div class="stat-card"><div class="value" id="generalProjectVisits">0</div><div class="label">Visites de fiches</div></div>
@@ -61,7 +61,7 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>Projets en attente de modération</h2></div>
+        <div class="card-header"><h2>À examiner</h2><span style="font-size:11px;color:var(--color-text-muted)">Projets en attente de validation</span></div>
         <div id="pendingList" class="empty-state">Aucun projet en attente.</div>
       </div>
     </div>
@@ -86,7 +86,7 @@
   function renderStats(stats) {
     const row1 = [
       { value: stats.developers_count ?? 0, label: "Développeurs" },
-      { value: stats.visitors_count ?? 0, label: "utilisateurs normal" },
+      { value: stats.visitors_count ?? 0, label: "Visiteurs enregistrés" },
       { value: stats.published_count ?? 0, label: "Projets publiés" },
       { value: stats.pending_count ?? 0, label: "En attente de modération" },
       { value: stats.open_reports_count ?? 0, label: "Signalements ouverts" },
