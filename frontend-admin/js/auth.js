@@ -76,30 +76,46 @@ function registerServiceWorker() {
 function setupMessagesNavigation() {
   const nav = document.querySelector(".sidebar-nav");
   if (!nav || !WebStoreAdminAPI.isAuthenticated()) return;
-  let link = nav.querySelector('a[data-webstore-messages="admin"]');
-  if (!link) {
-    link = document.createElement("a");
-    link.href = "messages.html";
-    link.dataset.webstoreMessages = "admin";
-    link.textContent = "Messages";
+
+  // Réutilise les liens déjà présents dans les pages et supprime les doublons.
+  // Avant, le lien statique du tableau de bord n'avait pas de data-attribute :
+  // le script en ajoutait donc un deuxième au chargement.
+  const getOrCreateLink = (dataKey, href, label) => {
+    const matches = [...nav.querySelectorAll("a")].filter((item) => {
+      const target = (item.getAttribute("href") || "").split("?")[0].split("#")[0];
+      return item.dataset[dataKey] === "admin" || target.endsWith("/" + href) || target === href;
+    });
+    const link = matches.shift() || document.createElement("a");
+    matches.forEach((duplicate) => duplicate.remove());
+    link.href = href;
+    link.dataset[dataKey] = "admin";
+    if (!link.textContent.trim()) link.textContent = label;
     const current = window.location.pathname.split("/").pop();
-    if (current === "messages.html") link.classList.add("active");
-    nav.appendChild(link);
-  }
-  let campaignLink = nav.querySelector('a[data-webstore-campaigns="admin"]');
-  if (!campaignLink) {
-    campaignLink = document.createElement("a");
-    campaignLink.href = "campaigns.html";
-    campaignLink.dataset.webstoreCampaigns = "admin";
-    campaignLink.textContent = "Publicités";
-    const current = window.location.pathname.split("/").pop();
-    if (current === "campaigns.html") campaignLink.classList.add("active");
-    nav.appendChild(campaignLink);
-  }
-  let badge = link.querySelector(".message-unread-badge");
-  if (!badge) { badge = document.createElement("span"); badge.className = "message-unread-badge"; badge.style.cssText = "display:none;float:right;min-width:18px;padding:1px 5px;border-radius:10px;background:#dc2626;color:#fff;font-size:12px;text-align:center"; link.appendChild(badge); }
-  const refresh = async () => {
-    try { const items = await WebStoreAdminAPI.getMessages("inbox"); const count = items.filter(m => !m.read).length; badge.textContent = count > 99 ? "99+" : String(count); badge.style.display = count ? "inline-block" : "none"; } catch (_) {}
+    link.classList.toggle("active", current === href);
+    if (!link.isConnected) nav.appendChild(link);
+    return link;
   };
-  refresh(); window.setInterval(refresh, 30000);
+
+  const link = getOrCreateLink("webstoreMessages", "messages.html", "Messages");
+  getOrCreateLink("webstoreCampaigns", "campaigns.html", "Publicités");
+
+  let badge = link.querySelector(".message-unread-badge");
+  if (!badge) {
+    badge = document.createElement("span");
+    badge.className = "message-unread-badge";
+    badge.setAttribute("aria-label", "Messages non lus");
+    badge.style.cssText = "display:none;float:right;min-width:18px;padding:1px 5px;border-radius:10px;background:#dc2626;color:#fff;font-size:12px;text-align:center";
+    link.appendChild(badge);
+  }
+
+  const refresh = async () => {
+    try {
+      const items = await WebStoreAdminAPI.getMessages("inbox");
+      const count = items.filter((message) => !message.read).length;
+      badge.textContent = count > 99 ? "99+" : String(count);
+      badge.style.display = count ? "inline-block" : "none";
+    } catch (_) {}
+  };
+  refresh();
+  window.setInterval(refresh, 30000);
 }
