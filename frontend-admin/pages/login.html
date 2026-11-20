@@ -1,58 +1,18 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Connexion administration — WEB STORE</title>
-<meta name="theme-color" content="#0B0B0F">
-<link rel="manifest" href="../manifest.json">
-<link rel="icon" href="../icons/icon-192.png">
-<link rel="stylesheet" href="../css/style.css">
-</head>
-<body>
-<div class="auth-wrap">
-  <div class="auth-card">
-    <div class="auth-logo">WEB STORE <strong>ADMINISTRATION</strong></div>
-    <h1>Connexion</h1>
-    <p class="subtitle">Accès réservé à l'équipe d'administration.</p>
-
-    <div id="formMessage"></div>
-
-    <form id="loginForm">
-      <div class="field">
-        <label for="email">E-mail</label>
-        <input type="email" id="email" required>
-      </div>
-      <div class="field">
-        <label for="password">Mot de passe</label>
-        <input type="password" id="password" required>
-      </div>
-      <button type="submit" class="btn" id="submitBtn">Se connecter</button>
-    </form>
-  </div>
-</div>
-
-<script src="../js/config.js"></script>
-<script src="../js/api.js"></script>
-<script>
-  document.getElementById("loginForm").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const submitBtn = document.getElementById("submitBtn");
-    const messageBox = document.getElementById("formMessage");
-    messageBox.innerHTML = "";
-    submitBtn.disabled = true;
-
-    try {
-      await WebStoreAdminAPI.login({
-        email: document.getElementById("email").value.trim(),
-        password: document.getElementById("password").value,
-      });
-      window.location.href = "dashboard.html";
-    } catch (err) {
-      messageBox.innerHTML = `<div class="form-message error">${String(err.message || "Identifiants invalides.").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}</div>`;
-      submitBtn.disabled = false;
-    }
-  });
-</script>
-</body>
-</html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Connexion administration — WEB STORE</title><meta name="theme-color" content="#0B0B0F"><link rel="manifest" href="../manifest.json"><link rel="icon" href="../icons/icon-192.png"><link rel="stylesheet" href="../css/style.css"></head>
+<body><div class="auth-wrap"><div class="auth-card"><div class="auth-logo">WEB STORE <strong>ADMINISTRATION</strong></div><h1 id="authTitle">Connexion</h1><p class="subtitle" id="authSubtitle">Accès réservé à l'équipe d'administration.</p><div id="formMessage" aria-live="polite"></div>
+<form id="loginForm"><div class="field"><label for="email">E-mail</label><input type="email" id="email" autocomplete="username" required></div><div class="field"><label for="password">Mot de passe</label><input type="password" id="password" autocomplete="current-password" required></div><button type="submit" class="btn" id="submitBtn">Continuer</button></form>
+<div id="mfaPanel" hidden><p class="subtitle">Confirmez votre identité avec une clé biométrique déjà enregistrée sur votre compte.</p><button type="button" class="btn" id="biometricBtn">Utiliser mon empreinte / visage</button><button type="button" class="btn btn-secondary" id="fallbackBtn" hidden>Utiliser le code e-mail de secours</button><div id="fallbackPanel" hidden><div class="field"><label for="fallbackCode">Code reçu par e-mail</label><input id="fallbackCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div><button type="button" class="btn" id="verifyCodeBtn">Vérifier le code</button></div></div>
+</div></div><script src="../js/config.js"></script><script src="../js/api.js"></script><script>
+const $=id=>document.getElementById(id);let mfaToken="", publicKeyOptions=null;
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function message(text,error=true){$('formMessage').innerHTML=`<div class="form-message${error?' error':''}">${esc(text)}</div>`;}
+function fromB64url(value){const s=value.replace(/-/g,'+').replace(/_/g,'/');const raw=atob(s+'='.repeat((4-s.length%4)%4));return Uint8Array.from(raw,c=>c.charCodeAt(0));}
+function toB64url(buffer){return btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function credentialJSON(credential){if(credential.toJSON)return credential.toJSON();const r=credential.response;const out={id:credential.id,rawId:toB64url(credential.rawId),type:credential.type,authenticatorAttachment:credential.authenticatorAttachment,clientExtensionResults:credential.getClientExtensionResults(),response:{clientDataJSON:toB64url(r.clientDataJSON),authenticatorData:toB64url(r.authenticatorData),signature:toB64url(r.signature)}};if(r.userHandle)out.response.userHandle=toB64url(r.userHandle);return out;}
+function decodeOptions(options){const o={...options,challenge:fromB64url(options.challenge)};if(options.allowCredentials)o.allowCredentials=options.allowCredentials.map(c=>({...c,id:fromB64url(c.id)}));return o;}
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();$('submitBtn').disabled=true;$('formMessage').innerHTML='';try{const data=await WebStoreAdminAPI.login({email:$('email').value.trim(),password:$('password').value});if(data.mfa_required){mfaToken=data.mfa_token;publicKeyOptions=data.options;$('loginForm').hidden=true;$('mfaPanel').hidden=false;$('authTitle').textContent='Vérification de sécurité';$('authSubtitle').textContent='Une deuxième vérification est nécessaire pour accéder à l’administration.';let platformReady=false;try{platformReady=!!(window.PublicKeyCredential&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());}catch(_){}$('biometricBtn').hidden=!platformReady;$('fallbackBtn').hidden=platformReady;if(!platformReady)message('Aucun authentificateur intégré compatible détecté. Utilisez le code e-mail de secours.',false);return;}location.href='dashboard.html';}catch(err){message(err.message||'Identifiants invalides.');$('submitBtn').disabled=false;}});
+$('biometricBtn').addEventListener('click',async()=>{const btn=$('biometricBtn');btn.disabled=true;try{if(!window.PublicKeyCredential||!navigator.credentials)throw new Error('La biométrie WebAuthn n’est pas disponible dans ce navigateur. Utilisez le code e-mail de secours.');const assertion=await navigator.credentials.get({publicKey:decodeOptions(publicKeyOptions)});await WebStoreAdminAPI.completePasskeyLogin(mfaToken,credentialJSON(assertion));location.href='dashboard.html';}catch(err){message(err.name==='NotAllowedError'?'Vérification annulée ou impossible. Vous pouvez utiliser le code e-mail de secours.':err.message||'Échec de la vérification.');$('fallbackBtn').hidden=false;}finally{btn.disabled=false;}});
+$('fallbackBtn').addEventListener('click',async()=>{const btn=$('fallbackBtn');btn.disabled=true;try{const r=await WebStoreAdminAPI.sendMfaFallback(mfaToken);$('fallbackPanel').hidden=false;message(r.message,false);}catch(err){message(err.message);}finally{btn.disabled=false;}});
+$('verifyCodeBtn').addEventListener('click',async()=>{const btn=$('verifyCodeBtn');btn.disabled=true;try{await WebStoreAdminAPI.verifyMfaFallback(mfaToken,$('fallbackCode').value.trim());location.href='dashboard.html';}catch(err){message(err.message);}finally{btn.disabled=false;}});
+</script></body></html>
