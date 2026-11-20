@@ -66,6 +66,23 @@ const API_BASE_URL = (window.WEBSTORE_API_BASE_URL || "http://127.0.0.1:8000/api
       if (data?.token) setToken(data.token);
       return data;
     },
+    completePasskeyLogin: async (mfa_token, credential) => {
+      const data = await request("/admin/passkeys/login/verify/", { method: "POST", body: JSON.stringify({ mfa_token, credential }) });
+      if (data?.token) setToken(data.token);
+      return data;
+    },
+    sendMfaFallback: (mfa_token) => request("/admin/passkeys/fallback/send/", { method: "POST", body: JSON.stringify({ mfa_token }) }),
+    verifyMfaFallback: async (mfa_token, code) => {
+      const data = await request("/admin/passkeys/fallback/verify/", { method: "POST", body: JSON.stringify({ mfa_token, code }) });
+      if (data?.token) setToken(data.token);
+      return data;
+    },
+    getMe: () => request("/admin/me/"),
+    changePassword: (payload) => request("/admin/password/change/", { method: "POST", body: JSON.stringify(payload) }),
+    getPasskeys: () => request("/admin/passkeys/"),
+    getPasskeyRegistrationOptions: (current_password) => request("/admin/passkeys/register/options/", { method: "POST", body: JSON.stringify({ current_password }) }),
+    verifyPasskeyRegistration: (challenge_id, credential, device_name) => request("/admin/passkeys/register/verify/", { method: "POST", body: JSON.stringify({ challenge_id, credential, device_name }) }),
+    deletePasskey: (id) => request(`/admin/passkeys/${id}/`, { method: "DELETE" }),
 
     // Vue générale
     getDashboardStats: () => request("/admin/dashboard/"),
