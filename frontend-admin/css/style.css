@@ -454,3 +454,8 @@ tbody tr:hover { background: rgba(255,255,255,.025); }
   .stat-card .value { font-size: 23px; }
   .stat-card .label { font-size: 10px; }
 }
+
+
+/* Authentification biométrique de l'administration */
+.status-badge{font-size:12px;padding:6px 10px;border-radius:20px;background:rgba(124,58,237,.14);color:#C4B5FD}
+.passkey-list{display:grid;gap:10px;margin-top:18px}.passkey-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid var(--color-border);border-radius:12px;background:var(--color-surface-alt)}.passkey-item small{display:block;color:var(--color-text-muted);margin-top:4px}.btn-secondary{margin-top:10px;background:var(--color-surface-alt);border:1px solid var(--color-border);color:var(--color-text)}.btn-danger{background:#7f1d1d;color:#fff;border:0}
