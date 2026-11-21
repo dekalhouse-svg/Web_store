@@ -20,6 +20,7 @@ from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.utils.text import slugify
 from .models import DeveloperProfile, Category, Project, Comment, Report, Event, AuthToken, Message, ModerationLog, Visitor, EmailCode, Favorite, CommentReport, VisitorActivity, CategoryRelation, SponsoredCampaign, SponsoredCampaignEvent, LoginAttemptByIP, RateLimitBucket, AdminPasskey, AdminAuthChallenge
+from .telegram_security import notify_admin_login
 
 def json_body(request):
     import json
@@ -43,9 +44,12 @@ def valid_project_url(value):
         return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
     except Exception:
         return False
-def issue_token(user, kind):
+def issue_token(user, kind, request=None):
     raw = secrets.token_urlsafe(32)
     AuthToken.objects.create(key_hash=hash_token(raw), user=user, kind=kind)
+    if kind == "admin":
+        # L'alerte est non bloquante : une panne Telegram ne doit pas empêcher la connexion.
+        notify_admin_login(user, request)
     return raw
 
 API_TOKEN_TTL = timedelta(days=30)
@@ -1567,7 +1571,7 @@ def admin_passkey_login_verify(request):
             passkey.save(update_fields=["sign_count", "last_used_at"])
             user = row.user
             row.delete()
-            return ok({"token": issue_token(user, "admin"), "user": {"id": user.id, "email": user.email,
+            return ok({"token": issue_token(user, "admin", request), "user": {"id": user.id, "email": user.email,
                        "full_name": user.get_full_name()}})
         except Exception:
             row.attempts += 1
@@ -1629,7 +1633,7 @@ def admin_passkey_fallback_verify(request):
             return err("Code incorrect ou expiré.", 401)
         user = row.user
         row.delete()
-        return ok({"token": issue_token(user, "admin"), "user": {"id": user.id, "email": user.email,
+        return ok({"token": issue_token(user, "admin", request), "user": {"id": user.id, "email": user.email,
                    "full_name": user.get_full_name()}})
 
 
@@ -1662,7 +1666,7 @@ def admin_login(request):
                        "options": json.loads(options_json(options)), "expires_in": 300})
         except Exception:
             return err("Impossible de préparer la vérification biométrique. Réessayez.", 503)
-    return ok({"token": issue_token(user, "admin"), "user": {"id": user.id, "email": user.email, "full_name": user.get_full_name()}})
+    return ok({"token": issue_token(user, "admin", request), "user": {"id": user.id, "email": user.email, "full_name": user.get_full_name()}})
 
 @csrf_exempt
 @admin_only
