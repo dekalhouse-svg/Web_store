@@ -19,7 +19,7 @@ from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.utils.text import slugify
-from .models import DeveloperProfile, Category, Project, Comment, Report, Event, AuthToken, Message, ModerationLog, Visitor, EmailCode, Favorite, CommentReport, VisitorActivity, CategoryRelation, SponsoredCampaign, SponsoredCampaignEvent, LoginAttemptByIP, RateLimitBucket, AdminPasskey, AdminAuthChallenge
+from .models import DeveloperProfile, Category, Project, Comment, Report, Event, AuthToken, Message, ModerationLog, Visitor, EmailCode, Favorite, CommentReport, VisitorActivity, CategoryRelation, SponsoredCampaign, SponsoredCampaignEvent, LoginAttemptByIP, RateLimitBucket, AdminPasskey, AdminAuthChallenge, Notification, PushSubscription
 from .telegram_security import notify_admin_login
 
 def json_body(request):
@@ -1875,6 +1875,133 @@ def admin_developer_reactivate(request,user_id):
     p.status="ACTIF";p.user.is_active=True;p.user.save(update_fields=["is_active"]);p.save(update_fields=["status"])
     return ok({"message":"Compte réactivé."})
 
+def _send_web_push(subscription, notification):
+    """Envoie une notification push si les clés VAPID sont configurées."""
+    private_key = getattr(settings, "WEBPUSH_VAPID_PRIVATE_KEY", "")
+    subject = getattr(settings, "WEBPUSH_VAPID_SUBJECT", "mailto:dekalhouse@gmail.com")
+    if not private_key:
+        return False
+    try:
+        from pywebpush import webpush, WebPushException
+        payload = json.dumps({
+            "title": notification.title,
+            "body": notification.body,
+            "url": notification.target_url or "/",
+            "notification_id": notification.id,
+        })
+        webpush(
+            subscription_info={
+                "endpoint": subscription.endpoint,
+                "keys": {"p256dh": subscription.p256dh, "auth": subscription.auth},
+            },
+            data=payload,
+            vapid_private_key=private_key,
+            vapid_claims={"sub": subject},
+            ttl=60 * 60 * 24,
+        )
+        return True
+    except Exception as exc:
+        response = getattr(exc, "response", None)
+        status_code = getattr(response, "status_code", None)
+        if status_code in (404, 410):
+            subscription.delete()
+        return False
+
+
+def _create_notification(recipient, title, body="", category="system", target_url="", send_push=True):
+    notification = Notification.objects.create(
+        recipient=recipient,
+        title=str(title)[:180],
+        body=str(body)[:1000],
+        category=category if category in {"message", "project", "activity", "system", "security"} else "system",
+        target_url=str(target_url)[:500],
+    )
+    if send_push and getattr(settings, "WEBPUSH_VAPID_PRIVATE_KEY", ""):
+        for subscription in PushSubscription.objects.filter(user=recipient).iterator():
+            _send_web_push(subscription, notification)
+    return notification
+
+
+@csrf_exempt
+@require("dev")
+def dev_notifications(request):
+    if request.method == "GET":
+        rows = Notification.objects.filter(recipient=request.api_user)[:200]
+        return ok([{
+            "id": n.id, "title": n.title, "body": n.body,
+            "category": n.category, "target_url": n.target_url,
+            "is_read": n.is_read, "created_at": n.created_at.isoformat(),
+        } for n in rows])
+    if request.method == "PATCH":
+        b = json_body(request)
+        if b.get("mark_all_read") is True:
+            Notification.objects.filter(recipient=request.api_user, is_read=False).update(is_read=True)
+            return ok({"message": "Notifications marquées comme lues."})
+        try:
+            notification_id = int(b.get("id"))
+        except (TypeError, ValueError):
+            return err("Notification invalide.")
+        updated = Notification.objects.filter(
+            id=notification_id, recipient=request.api_user, is_read=False
+        ).update(is_read=True)
+        if not updated and not Notification.objects.filter(id=notification_id, recipient=request.api_user).exists():
+            return err("Notification introuvable.", 404)
+        return ok({"message": "Notification marquée comme lue."})
+    return err("Méthode non autorisée.", 405)
+
+
+@csrf_exempt
+@require("dev")
+def dev_push_public_key(request):
+    if request.method != "GET":
+        return err("Méthode non autorisée.", 405)
+    return ok({
+        "public_key": getattr(settings, "WEBPUSH_VAPID_PUBLIC_KEY", ""),
+        "configured": bool(getattr(settings, "WEBPUSH_VAPID_PUBLIC_KEY", "") and getattr(settings, "WEBPUSH_VAPID_PRIVATE_KEY", "")),
+    })
+
+
+@csrf_exempt
+@require("dev")
+def dev_push_subscriptions(request):
+    if request.method == "POST":
+        b = json_body(request)
+        endpoint = str(b.get("endpoint", "")).strip()
+        keys = b.get("keys") or {}
+        p256dh, auth = str(keys.get("p256dh", "")), str(keys.get("auth", ""))
+        parsed_endpoint = urlsplit(endpoint)
+        host = (parsed_endpoint.hostname or "").lower().rstrip(".")
+        trusted_push_hosts = (
+            host == "fcm.googleapis.com"
+            or host.endswith(".mozilla.com")
+            or host.endswith(".mozilla.org")
+            or host.endswith(".windows.com")
+            or host.endswith(".apple.com")
+        )
+        if (
+            parsed_endpoint.scheme != "https" or not trusted_push_hosts
+            or not p256dh or not auth or len(endpoint) > 2000
+        ):
+            return err("Abonnement push invalide.")
+
+        PushSubscription.objects.update_or_create(
+            endpoint=endpoint,
+            defaults={
+                "user": request.api_user,
+                "p256dh": p256dh[:255],
+                "auth": auth[:255],
+                "user_agent": request.META.get("HTTP_USER_AGENT", "")[:500],
+            },
+        )
+        return ok({"message": "Cet appareil est abonné aux notifications."}, 201)
+    if request.method == "DELETE":
+        endpoint = str(json_body(request).get("endpoint", "")).strip()
+        if endpoint:
+            PushSubscription.objects.filter(user=request.api_user, endpoint=endpoint).delete()
+        return ok({"message": "Abonnement supprimé."})
+    return err("Méthode non autorisée.", 405)
+
+
 def _email_admin_message(recipient, subject, content, sender):
     """Envoie par e-mail une copie d'un message de l'administration."""
     if not recipient.email:
@@ -1915,7 +2042,14 @@ def admin_developer_message(request,user_id):
     if not subject or not content:return err("Sujet et contenu requis.")
     m=Message.objects.create(sender=request.api_user,recipient=recipient,subject=subject,content=content)
     email_sent = _email_admin_message(recipient, subject, content, request.api_user)
-    return ok({"id":m.id, "email_sent":email_sent},201)
+    notification = _create_notification(
+        recipient,
+        subject or "Nouveau message de l'administration",
+        content[:240],
+        category="message",
+        target_url=f"/pages/messages.html?id={m.id}",
+    )
+    return ok({"id":m.id, "email_sent":email_sent, "notification_id":notification.id},201)
 
 @admin_only
 def admin_message_all_developers(request):
@@ -1935,6 +2069,14 @@ def admin_message_all_developers(request):
         for recipient in recipient_list
     ]
     Message.objects.bulk_create(messages)
+    notification_count = 0
+    for recipient, message in zip(recipient_list, messages):
+        _create_notification(
+            recipient, subject or "Nouveau message de l'administration",
+            content[:240], category="message",
+            target_url=f"/pages/messages.html?id={message.id}",
+        )
+        notification_count += 1
     email_sent_count = sum(
         1 for recipient in recipient_list
         if _email_admin_message(recipient, subject, content, request.api_user)
@@ -1943,6 +2085,7 @@ def admin_message_all_developers(request):
         "message": "Message envoyé à tous les développeurs actifs.",
         "sent_count": len(messages),
         "email_sent_count": email_sent_count,
+        "notification_count": notification_count,
     }, 201)
 
 @admin_only

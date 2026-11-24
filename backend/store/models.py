@@ -286,3 +286,39 @@ class AdminAuthChallenge(models.Model):
     attempts = models.PositiveSmallIntegerField(default=0)
     expires_at = models.DateTimeField(db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Notification(models.Model):
+    """Notification interne persistante destinée à un utilisateur WEB STORE."""
+    CATEGORIES = [
+        ("message", "Message"),
+        ("project", "Projet"),
+        ("activity", "Activité"),
+        ("system", "Système"),
+        ("security", "Sécurité"),
+    ]
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="webstore_notifications")
+    title = models.CharField(max_length=180)
+    body = models.TextField(max_length=1000, blank=True)
+    category = models.CharField(max_length=20, choices=CATEGORIES, default="system", db_index=True)
+    target_url = models.CharField(max_length=500, blank=True)
+    is_read = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["recipient", "is_read", "created_at"], name="store_notif_user_read_idx")]
+
+
+class PushSubscription(models.Model):
+    """Abonnement Web Push d'un navigateur/appareil pour un utilisateur connecté."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="webpush_subscriptions")
+    endpoint = models.URLField(max_length=2000, unique=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=255)
+    user_agent = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
