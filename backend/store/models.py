@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.functions import Lower
 
 class DeveloperProfile(models.Model):
     STATUS_CHOICES = [("ACTIF","ACTIF"),("SUSPENDU","SUSPENDU")]
@@ -205,6 +206,27 @@ class EmailCode(models.Model):
                 fields=["user", "purpose"],
                 name="unique_email_code_user_purpose",
             )
+        ]
+
+
+class PendingDeveloperRegistration(models.Model):
+    """Inscription en attente : aucun compte Django n'existe avant validation e-mail."""
+    full_name = models.CharField(max_length=150)
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(max_length=254, unique=True)
+    phone = models.CharField(max_length=40, blank=True)
+    password_hash = models.CharField(max_length=256)
+    code_hash = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    last_sent_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["expires_at"])]
+        constraints = [
+            models.UniqueConstraint(Lower("username"), name="uniq_pending_dev_username_ci"),
+            models.UniqueConstraint(Lower("email"), name="uniq_pending_dev_email_ci"),
         ]
 
 

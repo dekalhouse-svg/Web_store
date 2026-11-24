@@ -10,6 +10,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.hashers import make_password
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
@@ -19,7 +20,7 @@ from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.utils.text import slugify
-from .models import DeveloperProfile, Category, Project, Comment, Report, Event, AuthToken, Message, ModerationLog, Visitor, EmailCode, Favorite, CommentReport, VisitorActivity, CategoryRelation, SponsoredCampaign, SponsoredCampaignEvent, LoginAttemptByIP, RateLimitBucket, AdminPasskey, AdminAuthChallenge, Notification, PushSubscription
+from .models import DeveloperProfile, Category, Project, Comment, Report, Event, AuthToken, Message, ModerationLog, Visitor, EmailCode, PendingDeveloperRegistration, Favorite, CommentReport, VisitorActivity, CategoryRelation, SponsoredCampaign, SponsoredCampaignEvent, LoginAttemptByIP, RateLimitBucket, AdminPasskey, AdminAuthChallenge, Notification, PushSubscription
 from .telegram_security import notify_admin_login
 
 def json_body(request):
@@ -47,9 +48,6 @@ def valid_project_url(value):
 def issue_token(user, kind, request=None):
     raw = secrets.token_urlsafe(32)
     AuthToken.objects.create(key_hash=hash_token(raw), user=user, kind=kind)
-    if kind == "admin":
-        # L'alerte est non bloquante : une panne Telegram ne doit pas empêcher la connexion.
-        notify_admin_login(user, request)
     return raw
 
 API_TOKEN_TTL = timedelta(days=30)
@@ -779,15 +777,38 @@ def _generic_reset_response():
     })
 
 
+def _pending_registration_digest(pending_id, code):
+    material = f"pending-dev:{pending_id}:verification:{code}".encode("utf-8")
+    return hmac.new(settings.SECRET_KEY.encode("utf-8"), material, hashlib.sha256).hexdigest()
+
+
+def _send_pending_registration_code(pending, code):
+    ttl = settings.EMAIL_VERIFICATION_CODE_TTL_MINUTES
+    subject = "WEB STORE — Vérification de votre adresse e-mail"
+    text_content = (
+        f"Votre code WEB STORE pour vérifier votre adresse e-mail est : {code}\n\n"
+        f"Ce code expire dans {ttl} minute(s). Ne le partagez avec personne."
+    )
+    html_content = (
+        '<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px;color:#17221b">'
+        '<h2 style="color:#16A34A">WEB STORE</h2>'
+        '<p>Utilisez ce code pour vérifier votre adresse e-mail :</p>'
+        f'<p style="font-size:30px;font-weight:700;letter-spacing:7px;color:#16A34A">{code}</p>'
+        f'<p>Ce code expire dans {ttl} minute(s).</p><p>Ne le partagez avec personne.</p></div>'
+    )
+    return send_transactional_email(pending.email, subject, text_content, html_content)
+
+
 @csrf_exempt
 def dev_register(request):
+    """Crée une inscription provisoire ; User n'est créé qu'après validation e-mail."""
     if request.method != "POST":
         return err("Méthode non autorisée.", 405)
     b = json_body(request)
-    full = str(b.get("full_name", "")).strip()
-    username = str(b.get("username", "")).strip()
+    full = str(b.get("full_name", "")).strip()[:150]
+    username = str(b.get("username", "")).strip()[:150]
     email = str(b.get("email", "")).strip().lower()
-    phone = str(b.get("phone", "")).strip()
+    phone = str(b.get("phone", "")).strip()[:40]
     password = b.get("password", "")
 
     if not all([full, username, email, password]):
@@ -800,40 +821,59 @@ def dev_register(request):
         return err("Adresse e-mail invalide.", 400)
     if User.objects.filter(Q(username__iexact=username) | Q(email__iexact=email)).exists():
         return err("Ce compte existe déjà.", 409)
+    if PendingDeveloperRegistration.objects.filter(
+        Q(username__iexact=username) | Q(email__iexact=email)
+    ).exclude(email=email).exists():
+        return err("Ce nom d'utilisateur est déjà utilisé.", 409)
 
-    # La vérification d'e-mail est obligatoire : ne jamais créer un profil
-    # considéré comme vérifié par défaut.
     if not (settings.BREVO_API_KEY or (
         settings.EMAIL_PROVIDER == "smtp" and getattr(settings, "EMAIL_HOST", "")
     )):
         return err("Le service d'e-mail n'est pas configuré. Contactez l'administration.", 503)
 
+    candidate = User(username=username, email=email, first_name=full)
     try:
-        user_candidate = User(username=username, email=email, first_name=full)
-        validate_password(password, user=user_candidate)
-        with transaction.atomic():
-            user = User.objects.create_user(
-                username=username, email=email, password=password, first_name=full
-            )
-            DeveloperProfile.objects.create(
-                user=user,
-                phone=phone,
-                email_verified=False,
-            )
+        validate_password(password, user=candidate)
     except ValidationError as exc:
         return err(" ".join(exc.messages), 400)
-    except Exception:
-        return err("Impossible de créer le compte.", 500)
 
-    sent, result = _issue_email_code(user, "verification")
-    if not sent:
-        user.delete()
-        if result == "cooldown":
-            return err("Veuillez patienter avant de demander un nouveau code.", 429)
+    now = timezone.now()
+    existing = PendingDeveloperRegistration.objects.filter(email=email).first()
+    cooldown = getattr(settings, "EMAIL_RESEND_COOLDOWN_SECONDS", 60)
+    if existing and (now - existing.last_sent_at).total_seconds() < cooldown:
+        return err("Veuillez patienter avant de demander un nouveau code.", 429)
+
+    code = f"{secrets.randbelow(1000000):06d}"
+    try:
+        if existing:
+            pending = existing
+            pending.full_name = full
+            pending.username = username
+            pending.phone = phone
+            pending.password_hash = make_password(password)
+            pending.code_hash = _pending_registration_digest(pending.pk, code)
+            pending.expires_at = now + timedelta(minutes=settings.EMAIL_VERIFICATION_CODE_TTL_MINUTES)
+            pending.attempts = 0
+            pending.last_sent_at = now
+            pending.save()
+        else:
+            pending = PendingDeveloperRegistration.objects.create(
+                full_name=full, username=username, email=email, phone=phone,
+                password_hash=make_password(password),
+                code_hash="", expires_at=now + timedelta(minutes=settings.EMAIL_VERIFICATION_CODE_TTL_MINUTES),
+                attempts=0, last_sent_at=now,
+            )
+            pending.code_hash = _pending_registration_digest(pending.pk, code)
+            pending.save(update_fields=["code_hash"])
+    except Exception:
+        return err("Impossible de préparer l'inscription. Réessayez.", 500)
+
+    if not _send_pending_registration_code(pending, code):
+        pending.delete()
         return err("L'envoi de l'e-mail a échoué. Réessayez plus tard.", 503)
 
     return ok({
-        "message": "Compte créé. Vérifiez votre adresse e-mail avec le code envoyé.",
+        "message": "Vérifiez votre adresse e-mail avec le code envoyé. Aucun compte n'est encore créé.",
         "verification_required": True,
     }, 201)
 
@@ -848,38 +888,58 @@ def dev_verify_email(request):
     if not re.fullmatch(r"\d{6}", code):
         return err("Code invalide.", 400)
 
-    user = User.objects.filter(email__iexact=email).first()
-    if not user or not hasattr(user, "developer_profile"):
-        return err("Code invalide.", 400)
-    profile = user.developer_profile
-    if profile.email_verified:
-        return ok({"message": "E-mail déjà vérifié."})
+    # Nouveau flux : aucun User n'est créé avant validation du code.
+    profile_status = "ACTIF"
+    with transaction.atomic():
+        pending = PendingDeveloperRegistration.objects.select_for_update().filter(email__iexact=email).first()
+        if pending:
+            if pending.expires_at <= timezone.now():
+                pending.delete()
+                return err("Code expiré. Recommencez votre inscription.", 400)
+            if pending.attempts >= settings.EMAIL_CODE_MAX_ATTEMPTS:
+                return err("Trop de tentatives. Recommencez votre inscription.", 429)
+            expected = _pending_registration_digest(pending.pk, code)
+            if not hmac.compare_digest(pending.code_hash, expected):
+                pending.attempts += 1
+                pending.save(update_fields=["attempts"])
+                if pending.attempts >= settings.EMAIL_CODE_MAX_ATTEMPTS:
+                    return err("Trop de tentatives. Recommencez votre inscription.", 429)
+                return err("Code invalide.", 400)
+            if User.objects.filter(Q(username__iexact=pending.username) | Q(email__iexact=pending.email)).exists():
+                pending.delete()
+                return err("Ce compte existe déjà. Recommencez avec une autre adresse ou un autre username.", 409)
+            user = User(username=pending.username, email=pending.email, first_name=pending.full_name)
+            user.password = pending.password_hash
+            user.save(force_insert=True)
+            DeveloperProfile.objects.create(user=user, phone=pending.phone, email_verified=True)
+            pending.delete()
+        else:
+            # Compatibilité temporaire avec les inscriptions commencées avant cette mise à jour.
+            user = User.objects.filter(email__iexact=email).first()
+            if not user or not hasattr(user, "developer_profile"):
+                return err("Code invalide.", 400)
+            profile = user.developer_profile
+            profile_status = profile.status
+            if profile.email_verified:
+                return ok({"message": "E-mail déjà vérifié."})
+            valid, reason = _check_email_code(user, "verification", code)
+            if not valid:
+                if reason == "expired":
+                    return err("Code expiré. Demandez un nouveau code.", 400)
+                if reason == "locked":
+                    return err("Trop de tentatives. Demandez un nouveau code.", 429)
+                return err("Code invalide.", 400)
+            profile.email_verified = True
+            profile.verification_code = ""
+            profile.save(update_fields=["email_verified", "verification_code"])
 
-    valid, reason = _check_email_code(user, "verification", code)
-    if not valid:
-        if reason == "expired":
-            return err("Code expiré. Demandez un nouveau code.", 400)
-        if reason == "locked":
-            return err("Trop de tentatives. Demandez un nouveau code.", 429)
-        return err("Code invalide.", 400)
-
-    profile.email_verified = True
-    profile.verification_code = ""
-    profile.save(update_fields=["email_verified", "verification_code"])
-
-    # La vérification termine l'inscription et ouvre directement la session dev.
-    if profile.status != "ACTIF":
+    if not user.is_active or profile_status != "ACTIF":
         return err("Votre compte n'est pas actif.", 403)
-
     return ok({
         "message": "E-mail vérifié.",
         "token": issue_token(user, "dev"),
-        "user": {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "full_name": user.get_full_name(),
-        },
+        "user": {"id": user.id, "username": user.username, "email": user.email,
+                 "full_name": user.get_full_name()},
     })
 
 
@@ -888,6 +948,23 @@ def dev_resend_code(request):
     if request.method != "POST":
         return err("Méthode non autorisée.", 405)
     email = str(json_body(request).get("email", "")).strip().lower()
+    pending = PendingDeveloperRegistration.objects.filter(email__iexact=email).first()
+    if pending:
+        now = timezone.now()
+        cooldown = getattr(settings, "EMAIL_RESEND_COOLDOWN_SECONDS", 60)
+        if (now - pending.last_sent_at).total_seconds() < cooldown:
+            return err("Veuillez patienter avant de demander un nouveau code.", 429)
+        code = f"{secrets.randbelow(1000000):06d}"
+        if not _send_pending_registration_code(pending, code):
+            return err("Impossible d'envoyer le code pour le moment.", 503)
+        pending.code_hash = _pending_registration_digest(pending.pk, code)
+        pending.expires_at = now + timedelta(minutes=settings.EMAIL_VERIFICATION_CODE_TTL_MINUTES)
+        pending.attempts = 0
+        pending.last_sent_at = now
+        pending.save(update_fields=["code_hash", "expires_at", "attempts", "last_sent_at"])
+        return ok({"message": "Un nouveau code a été envoyé."})
+
+    # Compatibilité avec les anciennes inscriptions non vérifiées.
     user = User.objects.filter(email__iexact=email).first()
     if user and hasattr(user, "developer_profile") and not user.developer_profile.email_verified:
         sent, result = _issue_email_code(user, "verification")
@@ -895,7 +972,7 @@ def dev_resend_code(request):
             return err("Impossible d'envoyer le code pour le moment.", 503)
         if not sent and result == "cooldown":
             return err("Veuillez patienter avant de demander un nouveau code.", 429)
-    return ok({"message": "Si le compte existe et nécessite une vérification, un code a été envoyé."})
+    return ok({"message": "Si une inscription en attente existe, un code a été envoyé."})
 
 
 LOGIN_MAX_FAILED_ATTEMPTS = 3
@@ -1678,6 +1755,9 @@ def admin_login(request):
         return err("Trop de tentatives. Réessayez dans 45 secondes.", 429)
     if not user:
         return err("Identifiants invalides.", 401)
+    # Alerte dès que l'e-mail et le mot de passe sont corrects, avant MFA et dashboard.
+    # L'envoi est non bloquant : Telegram indisponible ne bloque pas la connexion.
+    notify_admin_login(user, request)
     passkeys = list(AdminPasskey.objects.filter(user=user))
     if passkeys:
         try:

@@ -77,13 +77,14 @@ def notify_admin_login(user, request=None):
 
     timestamp = timezone.localtime().strftime("%d/%m/%Y à %H:%M:%S")
     message = (
-        "🔐 <b>WEB STORE — Connexion administrateur</b>\n\n"
+        "🔐 <b>WEB STORE — Identifiants administrateur validés</b>\n\n"
         f"Compte : <code>{html.escape(user.email or user.get_username())}</code>\n"
         f"Date : <code>{html.escape(timestamp)}</code>\n"
         f"Adresse IP : <code>{html.escape(ip)}</code>\n"
         f"Lieu estimé : <code>{html.escape(location)}</code>\n"
         f"Appareil : <code>{html.escape(agent)}</code>\n\n"
-        "⚠️ Si tu n'es pas à l'origine de cette connexion, sécurise immédiatement ton compte."
+        "Étape suivante : la vérification MFA peut encore être requise avant l'accès.\n"
+        "⚠️ Si tu n'es pas à l'origine de cette tentative, sécurise immédiatement ton compte."
     )
     payload = json.dumps({"chat_id": chat_id, "text": message, "parse_mode": "HTML", "disable_web_page_preview": True}).encode("utf-8")
     req = Request(
