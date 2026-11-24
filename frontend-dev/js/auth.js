@@ -59,3 +59,29 @@ function setupMessagesNavigation() {
   };
   refresh(); window.setInterval(refresh, 30000);
 }
+
+
+/* Compteur de notifications internes visible dans la navigation développeur. */
+document.addEventListener("DOMContentLoaded", () => {
+  const nav = document.querySelector(".sidebar-nav");
+  if (!nav || !WebStoreDevAPI.isAuthenticated()) return;
+  const link = Array.from(nav.querySelectorAll("a")).find(a => /notifications\.html$/.test(a.getAttribute("href") || ""));
+  if (!link) return;
+  let badge = link.querySelector(".notification-unread-badge");
+  if (!badge) {
+    badge = document.createElement("span");
+    badge.className = "notification-unread-badge";
+    badge.style.cssText = "display:none;float:right;min-width:18px;padding:1px 5px;border-radius:10px;background:#16A34A;color:#fff;font-size:12px;text-align:center";
+    link.appendChild(badge);
+  }
+  const refresh = async () => {
+    try {
+      const items = await WebStoreDevAPI.getNotifications();
+      const count = items.filter(item => !item.is_read).length;
+      badge.textContent = count > 99 ? "99+" : String(count);
+      badge.style.display = count ? "inline-block" : "none";
+    } catch (_) {}
+  };
+  refresh();
+  window.setInterval(refresh, 30000);
+});

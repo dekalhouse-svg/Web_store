@@ -104,5 +104,13 @@ const API_BASE_URL = (window.WEBSTORE_API_BASE_URL || "http://127.0.0.1:8000/api
       request(`/dev/messages/${id}/`, { method: "PATCH", body: JSON.stringify({ read: true }) }),
     replyToMessage: (id, content) =>
       request(`/dev/messages/${id}/reply/`, { method: "POST", body: JSON.stringify({ content }) }),
+
+    // Notifications persistantes et Web Push
+    getNotifications: () => request("/dev/notifications/"),
+    markNotificationRead: (id) => request("/dev/notifications/", { method: "PATCH", body: JSON.stringify({ id }) }),
+    markAllNotificationsRead: () => request("/dev/notifications/", { method: "PATCH", body: JSON.stringify({ mark_all_read: true }) }),
+    getPushPublicKey: () => request("/dev/push/public-key/"),
+    savePushSubscription: (subscription) => request("/dev/push/subscriptions/", { method: "POST", body: JSON.stringify(subscription) }),
+    removePushSubscription: (endpoint) => request("/dev/push/subscriptions/", { method: "DELETE", body: JSON.stringify({ endpoint }) }),
   };
 })();
