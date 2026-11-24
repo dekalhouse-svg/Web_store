@@ -157,4 +157,5 @@ byId("removeAvatarBtn").addEventListener("click",()=>{
 });
 (async()=>{try{currentUser=await WebStoreDevAPI.getMe();renderProfile(currentUser);fillForm(currentUser);}catch(err){byId("profileInfo").textContent="Impossible de charger le profil : "+(err.message||"erreur inconnue");}})();
 </script>
-<script src="../js/dev-shell.js"></script>\n</body></html>
+<script src="../js/dev-shell.js"></script>
+</body></html>
