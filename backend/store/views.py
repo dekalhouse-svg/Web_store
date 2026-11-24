@@ -1329,7 +1329,20 @@ def dev_messages(request):
 def dev_message_detail(request,message_id):
     m=Message.objects.filter(id=message_id,recipient=request.api_user).first()
     if not m: return err("Message introuvable.",404)
-    if request.method=="GET": return ok({"id":m.id,"subject":m.subject,"content":m.content,"read":m.read,"created_at":m.created_at.isoformat(),"sender_name":m.sender.get_full_name() or m.sender.username,"sender_email":m.sender.email})
+    if request.method=="GET":
+        replies = [{
+            "id": r.id,
+            "content": r.content,
+            "created_at": r.created_at.isoformat(),
+            "sender_name": r.sender.get_full_name() or r.sender.username,
+            "is_mine": r.sender_id == request.api_user.id,
+        } for r in m.replies.select_related("sender").order_by("created_at")]
+        return ok({
+            "id": m.id, "subject": m.subject, "content": m.content,
+            "read": m.read, "created_at": m.created_at.isoformat(),
+            "sender_name": m.sender.get_full_name() or m.sender.username,
+            "sender_email": m.sender.email, "replies": replies,
+        })
     if request.method=="PATCH":
         if json_body(request).get("read") is True: m.read=True;m.save(update_fields=["read"])
         return ok({"message":"Message mis à jour."})
@@ -1343,9 +1356,19 @@ def dev_message_reply(request,message_id):
     if request.method!="POST": return err("Méthode non autorisée.",405)
     m=Message.objects.filter(id=message_id,recipient=request.api_user).first()
     if not m: return err("Message introuvable.",404)
-    b=json_body(request); content=str(b.get("content","")).strip()
-    if not content:return err("Contenu requis.")
-    reply=Message.objects.create(sender=request.api_user,recipient=m.sender,subject="Re: "+m.subject,content=content,parent=m)
+    b = json_body(request)
+    raw_content = b.get("content", "")
+    if not isinstance(raw_content, str):
+        return err("Contenu invalide.")
+    content = raw_content.strip()
+    if not content:
+        return err("Contenu requis.")
+    if len(content) > 10000:
+        return err("Le message ne doit pas dépasser 10 000 caractères.")
+    reply = Message.objects.create(
+        sender=request.api_user, recipient=m.sender,
+        subject=("Re: " + m.subject)[:200], content=content, parent=m,
+    )
     return ok({"id":reply.id},201)
 
 @csrf_exempt
