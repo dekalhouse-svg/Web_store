@@ -1,0 +1,56 @@
+name: WEB STORE - Rappels de notifications
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: webstore-notification-reminders
+  cancel-in-progress: false
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      DJANGO_DEBUG: "false"
+      DJANGO_TIME_ZONE: Africa/Lubumbashi
+      WEBPUSH_VAPID_PUBLIC_KEY: ${{ secrets.WEBPUSH_VAPID_PUBLIC_KEY }}
+      WEBPUSH_VAPID_PRIVATE_KEY: ${{ secrets.WEBPUSH_VAPID_PRIVATE_KEY }}
+      WEBPUSH_VAPID_SUBJECT: ${{ secrets.WEBPUSH_VAPID_SUBJECT }}
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Vérifier la configuration
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Erreur : le secret GitHub DATABASE_URL est absent."
+            exit 1
+          fi
+          if [ -z "$DJANGO_SECRET_KEY" ]; then
+            echo "Erreur : le secret GitHub DJANGO_SECRET_KEY est absent."
+            exit 1
+          fi
+
+      - name: Envoyer les rappels dus
+        run: python manage.py send_notification_reminders
