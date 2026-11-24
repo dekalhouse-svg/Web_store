@@ -39,6 +39,9 @@ urlpatterns = [
     path("api/dev/messages/", views.dev_messages),
     path("api/dev/messages/<int:message_id>/", views.dev_message_detail),
     path("api/dev/messages/<int:message_id>/reply/", views.dev_message_reply),
+    path("api/dev/notifications/", views.dev_notifications),
+    path("api/dev/push/public-key/", views.dev_push_public_key),
+    path("api/dev/push/subscriptions/", views.dev_push_subscriptions),
 
     path("api/admin/login/", views.admin_login),
     path("api/admin/me/", views.admin_me),

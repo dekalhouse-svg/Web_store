@@ -90,3 +90,8 @@ if os.environ.get("EMAIL_HOST"):
     EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() == "true"
     if EMAIL_PROVIDER == "smtp":
         EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+# Web Push (facultatif tant que les clés VAPID ne sont pas configurées).
+WEBPUSH_VAPID_PUBLIC_KEY = os.environ.get("WEBPUSH_VAPID_PUBLIC_KEY", "").strip()
+WEBPUSH_VAPID_PRIVATE_KEY = os.environ.get("WEBPUSH_VAPID_PRIVATE_KEY", "").strip()
+WEBPUSH_VAPID_SUBJECT = os.environ.get("WEBPUSH_VAPID_SUBJECT", "mailto:dekalhouse@gmail.com").strip()
