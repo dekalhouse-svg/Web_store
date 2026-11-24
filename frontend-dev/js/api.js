@@ -102,6 +102,7 @@ const API_BASE_URL = (window.WEBSTORE_API_BASE_URL || "http://127.0.0.1:8000/api
     getMessage: (id) => request(`/dev/messages/${id}/`),
     markMessageRead: (id) =>
       request(`/dev/messages/${id}/`, { method: "PATCH", body: JSON.stringify({ read: true }) }),
+    deleteMessage: (id) => request(`/dev/messages/${id}/`, { method: "DELETE" }),
     replyToMessage: (id, content) =>
       request(`/dev/messages/${id}/reply/`, { method: "POST", body: JSON.stringify({ content }) }),
 
