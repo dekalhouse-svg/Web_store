@@ -1323,16 +1323,19 @@ def dev_project_comments(request,project_id):
 @require("dev")
 def dev_messages(request):
     if request.method!="GET": return err("Méthode non autorisée.",405)
-    return ok([{"id":m.id,"subject":m.subject,"content":m.content,"read":m.read,"created_at":m.created_at.isoformat()} for m in Message.objects.filter(recipient=request.api_user).order_by("-created_at")])
+    return ok([{"id":m.id,"subject":m.subject,"content":m.content,"read":m.read,"created_at":m.created_at.isoformat(),"sender_name":m.sender.get_full_name() or m.sender.username,"sender_email":m.sender.email} for m in Message.objects.filter(recipient=request.api_user).select_related("sender").order_by("-created_at")])
 
 @require("dev")
 def dev_message_detail(request,message_id):
     m=Message.objects.filter(id=message_id,recipient=request.api_user).first()
     if not m: return err("Message introuvable.",404)
-    if request.method=="GET": return ok({"id":m.id,"subject":m.subject,"content":m.content,"read":m.read,"created_at":m.created_at.isoformat()})
+    if request.method=="GET": return ok({"id":m.id,"subject":m.subject,"content":m.content,"read":m.read,"created_at":m.created_at.isoformat(),"sender_name":m.sender.get_full_name() or m.sender.username,"sender_email":m.sender.email})
     if request.method=="PATCH":
         if json_body(request).get("read") is True: m.read=True;m.save(update_fields=["read"])
         return ok({"message":"Message mis à jour."})
+    if request.method=="DELETE":
+        m.delete()
+        return ok({"message":"Message supprimé."})
     return err("Méthode non autorisée.",405)
 
 @require("dev")
@@ -2214,6 +2217,9 @@ def admin_message_detail(request, message_id):
             m.read = True
             m.save(update_fields=["read"])
         return ok({"message": "Message mis à jour.", "read": m.read})
+    if request.method == "DELETE":
+        m.delete()
+        return ok({"message": "Message supprimé."})
     if request.method != "GET":
         return err("Méthode non autorisée.", 405)
     return ok({
