@@ -322,3 +322,15 @@ class PushSubscription(models.Model):
 
     class Meta:
         ordering = ["-updated_at"]
+
+
+class NotificationReminderLog(models.Model):
+    """Empêche l'envoi répété d'un même rappel pour une période d'inactivité."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notification_reminder_logs")
+    reminder_key = models.CharField(max_length=255, unique=True, db_index=True)
+    reminder_type = models.CharField(max_length=30)
+    threshold_days = models.PositiveSmallIntegerField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-sent_at"]
