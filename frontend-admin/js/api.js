@@ -112,6 +112,7 @@ const API_BASE_URL = (window.WEBSTORE_API_BASE_URL || "http://127.0.0.1:8000/api
     getMessages: (box = "inbox") => request(`/admin/messages/?box=${encodeURIComponent(box)}`),
     getMessage: (id) => request(`/admin/messages/${id}/`),
     markMessageRead: (id) => request(`/admin/messages/${id}/`, { method: "PATCH", body: JSON.stringify({ read: true }) }),
+    deleteMessage: (id) => request(`/admin/messages/${id}/`, { method: "DELETE" }),
     replyToMessage: (id, content) => request(`/admin/messages/${id}/reply/`, { method: "POST", body: JSON.stringify({ content }) }),
 
     // Campagnes publicitaires
