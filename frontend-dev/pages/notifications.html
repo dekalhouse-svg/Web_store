@@ -1,8 +1,117 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#16A34A"><title>Notifications — WEB STORE Dev</title><link rel="manifest" href="../manifest.json"><link rel="icon" href="../icons/icon-192.png"><link rel="stylesheet" href="../css/style.css"><style>
-.page-intro{color:#64748b;line-height:1.6;margin:0 0 22px;font-size:13px}.page-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}.page-toolbar select,.page-toolbar input{max-width:220px}.data-list{display:grid;gap:10px}.data-row{border:1px solid #e2e8f0;border-radius:12px;padding:14px;background:#fff}.data-row h3{font-size:14px;margin-bottom:6px}.data-row p{font-size:13px;line-height:1.6;color:#475569;white-space:pre-wrap}.muted{color:#64748b;font-size:12px}.pill{display:inline-block;border-radius:30px;padding:4px 9px;background:#f1f5f9;color:#475569;font-size:11px;font-weight:650}.pill.green{background:#dcfce7;color:#166534}.notice{padding:13px 15px;border-radius:11px;background:#f0fdf4;color:#166534;font-size:13px;line-height:1.55}.table-wrap{overflow-x:auto}.table-wrap table{min-width:560px}.empty-state{line-height:1.6}
-</style></head><body><div class="app-shell"><aside class="sidebar" id="sidebar"><div class="sidebar-logo">WEB<span>STORE</span></div><nav class="sidebar-nav" aria-label="Navigation principale">
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#16A34A">
+<title>Notifications — WEB STORE Dev</title>
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
+<style>
+.page-intro{color:#64748b;line-height:1.6;margin:0 0 18px;font-size:13px}
+.notice-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 18px}
+.notice-tools .btn{width:auto}
+.notice-list{display:grid;gap:10px}
+.notice-row{display:block;width:100%;text-align:left;text-decoration:none;color:inherit;border:1px solid #e2e8f0;border-radius:12px;padding:14px;background:#fff}
+.notice-row.unread{border-color:#86efac;background:#f0fdf4}
+.notice-row h3{font-size:14px;margin:0 0 6px}
+.notice-row p{font-size:13px;line-height:1.6;color:#475569;white-space:pre-wrap;margin:0 0 8px}
+.notice-meta{display:flex;justify-content:space-between;gap:10px;color:#64748b;font-size:11px}
+.notice-pill{display:inline-block;border-radius:30px;padding:3px 8px;background:#dcfce7;color:#166534;font-size:10px;font-weight:700}
+.push-help{font-size:12px;color:#64748b;line-height:1.5;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo">WEB<span>STORE</span></div>
+<nav class="sidebar-nav" aria-label="Navigation principale">
 <a href="dashboard.html">Vue générale</a><a href="projects.html">Mes projets</a><a href="project-form.html">Publier un projet</a><a href="statistics.html">Statistiques</a><a href="comments.html">Commentaires</a><a href="messages.html">Messages</a><a href="notifications.html">Notifications</a><a href="profile.html">Mon profil</a><a href="settings.html">Paramètres et sécurité</a><a href="help.html">Centre d'aide</a>
-</nav><div class="sidebar-footer"><button class="sidebar-logout" id="logoutBtn" type="button">Se déconnecter</button></div></aside><main class="content"><header class="topbar"><button class="menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">☰</button><div class="topbar-title">Notifications</div><div></div></header><div class="page"><h1>Notifications et alertes</h1><p class="page-intro">Les alertes ci-dessous sont reconstituées à partir des messages et des statuts actuellement fournis par WEB STORE.</p><div id="notificationsList" class="data-list"><div class="card empty-state">Chargement…</div></div></div></main></div><script src="../js/config.js"></script><script src="../js/api.js"></script><script src="../js/auth.js"></script><script src="../js/dev-shell.js"></script><script>
+</nav>
+<div class="sidebar-footer"><button class="sidebar-logout" id="logoutBtn" type="button">Se déconnecter</button></div>
+</aside>
+<main class="content">
+<header class="topbar"><button class="menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">☰</button><div class="topbar-title">Notifications</div><div></div></header>
+<div class="page">
+<h1>Notifications</h1>
+<p class="page-intro">Retrouvez ici les messages et les alertes qui vous sont personnellement destinés.</p>
+<section class="card">
+<div class="card-header"><h2>Notifications sur cet appareil</h2></div>
+<p id="pushStatus" class="page-intro">Vérification de la disponibilité des notifications push…</p>
+<div class="notice-tools">
+<button class="btn btn-inline" type="button" id="pushButton">Activer les notifications</button>
+<button class="btn btn-inline" type="button" id="markAllButton" style="background:#475569">Tout marquer comme lu</button>
+</div>
+<p class="push-help">L'autorisation est facultative. Vous pouvez la retirer à tout moment dans les paramètres de votre navigateur ou de votre téléphone.</p>
+</section>
+<div id="notificationsList" class="notice-list" style="margin-top:16px"><div class="card">Chargement…</div></div>
+</div>
+</main>
+</div>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/dev-shell.js"></script>
+<script>
+const box=document.getElementById("notificationsList");
+const pushStatus=document.getElementById("pushStatus");
+const pushButton=document.getElementById("pushButton");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-(async()=>{const box=document.getElementById("notificationsList");try{const [messages,projects]=await Promise.all([WebStoreDevAPI.getMessages(),WebStoreDevAPI.getProjects()]);const items=[];messages.forEach(m=>items.push({title:m.subject||"Message de l’administration",detail:m.read?"Message déjà lu":"Nouveau message non lu",date:m.created_at,href:"messages.html",unread:!m.read}));projects.forEach(p=>{if(["EN_ATTENTE","REJETE","SUSPENDU","PUBLIE"].includes(p.status))items.push({title:"Projet : "+p.name,detail:({EN_ATTENTE:"En attente de validation",REJETE:"Projet rejeté",SUSPENDU:"Projet suspendu",PUBLIE:"Projet publié"})[p.status],date:p.updated_at||p.created_at,href:"project-detail.html?id="+encodeURIComponent(p.id),unread:false});});items.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));box.replaceChildren();if(!items.length){box.innerHTML='<div class="card empty-state">Aucune alerte disponible.</div>';return;}items.forEach(i=>{const a=document.createElement("a");a.className="data-row";a.href=i.href;a.innerHTML=`<div style="display:flex;justify-content:space-between;gap:12px"><h3>${esc(i.title)}</h3>${i.unread?'<span class="pill green">Non lu</span>':''}</div><p>${esc(i.detail)}</p><div class="muted">${i.date?new Date(i.date).toLocaleString("fr-FR"):"Date non disponible"}</div>`;box.append(a);});}catch(e){box.textContent=e.message||"Impossible de charger les alertes."}})();
-</script></body></html>
+function decodeKey(value){const pad="=".repeat((4-value.length%4)%4);const raw=atob((value+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(raw,c=>c.charCodeAt(0));}
+function safeTarget(value){try{const u=new URL(value||"/pages/notifications.html",location.origin);return u.origin===location.origin?u.href:"/pages/notifications.html";}catch(_){return "/pages/notifications.html";}}
+async function loadNotifications(){
+  try{
+    const items=await WebStoreDevAPI.getNotifications();
+    box.replaceChildren();
+    if(!items.length){const empty=document.createElement("div");empty.className="card empty-state";empty.textContent="Aucune notification pour le moment.";box.append(empty);return;}
+    items.forEach(item=>{
+      const a=document.createElement("a");a.className="notice-row"+(item.is_read?"":" unread");a.href=safeTarget(item.target_url);
+      a.innerHTML=`<div class="notice-meta"><span>${esc(item.category||"Information")}</span>${item.is_read?"":'<span class="notice-pill">Nouveau</span>'}</div><h3>${esc(item.title)}</h3><p>${esc(item.body)}</p><div class="notice-meta"><span>${new Date(item.created_at).toLocaleString("fr-FR")}</span><span>Ouvrir →</span></div>`;
+      a.addEventListener("click",async()=>{if(!item.is_read){try{await WebStoreDevAPI.markNotificationRead(item.id);}catch(_){}}});
+      box.append(a);
+    });
+  }catch(e){box.textContent=e.message||"Impossible de charger les notifications.";}
+}
+async function refreshPushState(){
+  if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)){
+    pushStatus.textContent="Les notifications push ne sont pas prises en charge par ce navigateur.";
+    pushButton.disabled=true;return;
+  }
+  try{
+    const cfg=await WebStoreDevAPI.getPushPublicKey();
+    if(!cfg.configured){pushStatus.textContent="Les notifications internes sont disponibles. Les notifications sur l'appareil seront activées lorsque les clés VAPID seront configurées sur le serveur.";pushButton.disabled=true;return;}
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    pushButton.textContent=sub?"Désactiver sur cet appareil":"Activer les notifications";
+    pushStatus.textContent=sub?"Cet appareil est abonné aux notifications push.":(Notification.permission==="denied"?"Les notifications sont bloquées dans les paramètres de l'appareil.":"Autorisez les notifications pour les recevoir même lorsque WEB STORE est fermé.");
+  }catch(e){pushStatus.textContent="Impossible de vérifier l'abonnement push pour le moment.";pushButton.disabled=true;}
+}
+pushButton.addEventListener("click",async()=>{
+  pushButton.disabled=true;
+  try{
+    const cfg=await WebStoreDevAPI.getPushPublicKey();
+    if(!cfg.configured)throw new Error("Les clés de notifications ne sont pas encore configurées sur le serveur.");
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(sub){
+      await WebStoreDevAPI.removePushSubscription(sub.endpoint);
+      await sub.unsubscribe();
+    }else{
+      const permission=await Notification.requestPermission();
+      if(permission!=="granted")throw new Error("Autorisation de notification non accordée.");
+      sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeKey(cfg.public_key)});
+      await WebStoreDevAPI.savePushSubscription(sub.toJSON());
+    }
+    await refreshPushState();
+  }catch(e){pushStatus.textContent=e.message||"Impossible de modifier l'abonnement.";}
+  finally{pushButton.disabled=false;}
+});
+document.getElementById("markAllButton").addEventListener("click",async()=>{
+  try{await WebStoreDevAPI.markAllNotificationsRead();await loadNotifications();}
+  catch(e){pushStatus.textContent=e.message||"Impossible de mettre à jour les notifications.";}
+});
+loadNotifications();refreshPushState();
+</script>
+</body>
+</html>

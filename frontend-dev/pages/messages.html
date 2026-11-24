@@ -86,6 +86,11 @@
           </div>`
         )
         .join("");
+      const requestedId = new URLSearchParams(window.location.search).get("id");
+      if (requestedId && !window.__webstoreDeepLinkOpened && messages.some(m => String(m.id) === requestedId)) {
+        window.__webstoreDeepLinkOpened = true;
+        await openMessage(requestedId);
+      }
     } catch (err) {
       list.textContent = "Impossible de charger vos messages pour le moment.";
     }
