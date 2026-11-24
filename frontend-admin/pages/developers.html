@@ -89,7 +89,7 @@
     status.textContent = "Envoi en cours…";
     try {
       const result = await WebStoreAdminAPI.sendMessageToAllDevelopers({ subject, content });
-      status.textContent = `Message envoyé à ${result.sent_count} développeur(s).`;
+      status.textContent = `Envoyé à ${result.sent_count} développeur(s) : ${result.notification_count ?? result.sent_count} notification(s) WEB STORE créée(s), ${result.email_sent_count ?? 0} e-mail(s) Gmail envoyé(s).`;
       form.reset();
     } catch (err) {
       status.textContent = err.message || "Impossible d'envoyer le message.";
