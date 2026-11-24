@@ -42,7 +42,7 @@
   background:var(--color-surface, #fff);
   border-top:1px solid var(--color-border, #e5e7eb);
 }
-.chat-composer textarea { min-height:43px; max-height:110px; resize:none; }
+.chat-composer textarea { height:43px; min-height:43px; max-height:110px; resize:none; overflow-y:hidden; box-sizing:border-box; }
 .chat-status:not(:empty) {
   position:fixed;
   left:240px;
@@ -82,6 +82,15 @@
 <script>
 (async()=>{
  const id=new URLSearchParams(location.search).get('id'),$=id=>document.getElementById(id);
+ const replyInput=$('replyContent');
+ const resizeReplyInput=()=>{
+   replyInput.style.height='43px';
+   const maxHeight=110;
+   const nextHeight=Math.min(replyInput.scrollHeight,maxHeight);
+   replyInput.style.height=nextHeight+'px';
+   replyInput.style.overflowY=replyInput.scrollHeight>maxHeight?'auto':'hidden';
+ };
+ replyInput.addEventListener('input',resizeReplyInput);
  const back=()=>location.href='messages.html';$('backBtn').addEventListener('click',back);
  $('menuBtn').addEventListener('click',()=>{$('messageMenu').hidden=!$('messageMenu').hidden;});
  document.addEventListener('click',e=>{if(!e.target.closest('.chat-menu-wrap'))$('messageMenu').hidden=true;});
@@ -105,7 +114,7 @@
  $('replyForm').addEventListener('submit',async e=>{
    e.preventDefault();const content=$('replyContent').value.trim();if(!content)return;
    $('sendReply').disabled=true;
-   try{await WebStoreDevAPI.replyToMessage(id,content);addBubble(content,new Date().toISOString(),true);$('replyContent').value='';$('status').textContent='';$('chatBody').scrollTop=$('chatBody').scrollHeight;}
+   try{await WebStoreDevAPI.replyToMessage(id,content);addBubble(content,new Date().toISOString(),true);$('replyContent').value='';resizeReplyInput();$('status').textContent='';$('chatBody').scrollTop=$('chatBody').scrollHeight;}
    catch(e){$('status').textContent='Impossible d’envoyer la réponse.';}
    finally{$('sendReply').disabled=false;}
  });
