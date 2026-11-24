@@ -11,7 +11,7 @@
  * Même si VERSION n'est pas changée, les fichiers sont toujours récupérés
  * sur le réseau en premier : le cache ne sert que quand on est hors ligne.
  */
-const VERSION = "2026.11.19-2";
+const VERSION = "2026.11.24-notifications-1";
 
 const CACHE_PREFIX = "webstore-dev-";
 const CACHE_NAME = CACHE_PREFIX + VERSION;
@@ -156,3 +156,36 @@ async function networkFirst(event, request, url) {
     return (await matchCache(key)) || offlineResponse(request);
   }
 }
+
+
+/* Notifications WEB STORE — réception même lorsque l'application est fermée. */
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (_) {}
+  const title = data.title || "WEB STORE";
+  const options = {
+    body: data.body || "Vous avez une nouvelle notification.",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    tag: data.notification_id ? "webstore-" + data.notification_id : "webstore-notification",
+    data: { url: data.url || "/pages/notifications.html" },
+    renotify: false
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const requested = new URL(event.notification.data && event.notification.data.url || "/pages/notifications.html", self.location.origin);
+  const target = requested.origin === self.location.origin ? requested.href : new URL("/pages/notifications.html", self.location.origin).href;
+  event.waitUntil((async () => {
+    const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of clientsList) {
+      if (client.url.startsWith(self.location.origin) && "focus" in client) {
+        await client.navigate(target);
+        return client.focus();
+      }
+    }
+    if (self.clients.openWindow) return self.clients.openWindow(target);
+  })());
+});
