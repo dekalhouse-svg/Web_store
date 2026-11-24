@@ -6,6 +6,7 @@ window.WEBSTORE_API_BASE_URL = "https://web-store-back.onrender.com/api";
 
   var deferredInstallPrompt = null;
   var button = null;
+  var installSection = null;
   var installEventAvailable = false;
 
   function isInstalled() {
@@ -86,16 +87,22 @@ window.WEBSTORE_API_BASE_URL = "https://web-store-back.onrender.com/api";
 
   function addButton() {
     if (button || !document.body) return;
+    var sidebar = document.getElementById("sidebar");
+    var nav = sidebar && sidebar.querySelector(".sidebar-nav");
+    if (!nav) return;
+
+    installSection = document.createElement("div");
+    installSection.className = "sidebar-install-section";
+    installSection.style.cssText = "margin:12px 12px 8px;padding:12px 10px;border-top:1px solid rgba(128,128,128,.2)";
     button = document.createElement("button");
     button.id = "webstoreInstallShareButton";
     button.type = "button";
     button.textContent = "Installer l’application";
     button.addEventListener("click", handleButtonClick);
-    button.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:99999;" +
-      "border:0;border-radius:999px;padding:12px 16px;background:#16A34A;color:#fff;" +
-      "font:600 14px/1.2 Arial,sans-serif;box-shadow:0 4px 16px #0003;cursor:pointer;" +
-      "max-width:calc(100vw - 32px)";
-    document.body.appendChild(button);
+    button.style.cssText = "display:block;width:100%;border:0;border-radius:9px;padding:11px 12px;" +
+      "background:#e8efe9;color:#17452a;font:600 13px/1.3 Arial,sans-serif;cursor:pointer;text-align:left";
+    installSection.appendChild(button);
+    nav.insertAdjacentElement("afterend", installSection);
     updateButton();
   }
 
