@@ -8,6 +8,19 @@
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../icons/icon-192.png">
 <link rel="stylesheet" href="../css/style.css">
+
+<style>
+.password-input-wrap{position:relative;width:100%;display:block}
+.password-input-wrap input[type="password"],
+.password-input-wrap input[type="text"]{box-sizing:border-box;width:100%;padding-right:48px!important}
+.password-toggle{position:absolute;top:50%;right:8px;transform:translateY(-50%);width:34px;height:34px;padding:0;border:0;border-radius:7px;background:transparent;color:#64748b;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.password-toggle:hover{background:rgba(100,116,139,.10);color:#1e293b}
+.password-toggle:focus-visible{outline:2px solid #64748b;outline-offset:1px}
+.password-toggle svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.password-toggle .password-eye-hide{display:none}
+.password-toggle[aria-pressed="true"] .password-eye-show{display:none}
+.password-toggle[aria-pressed="true"] .password-eye-hide{display:block}
+</style>
 </head>
 <body>
 <div class="auth-wrap">
@@ -37,10 +50,11 @@
       </div>
       <div class="field">
         <label for="password">Mot de passe</label>
-        <input type="password" id="password" minlength="8" required>
+        <div class="password-input-wrap"><input type="password" id="password" minlength="8" required><button class="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false" title="Afficher le mot de passe">
+<svg class="password-eye-show" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+<svg class="password-eye-hide" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg>
+</button></div>
         <p class="field-hint">8 caractères minimum.</p>
-         <label class= 'chec'>afficher</label>
-         <input type="checkbox" name="" id="c" value="" />
       </div>
       <button type="submit" class="btn" id="submitBtn">Créer mon compte</button>
     </form>
@@ -78,18 +92,23 @@
       submitBtn.disabled = false;
     }
   });
-    let b = document.getElementById('c')
-  let p = document.getElementById('password')
-  b.addEventListener('click', function (){
-   if (p.type === 'text') {
-    p.type = 'password'
-    
-   }
-   else{
-    p.type = 'text'
-    
-   }
-  })
+</script>
+
+<script>
+document.querySelectorAll(".password-input-wrap").forEach((wrap) => {
+  const input = wrap.querySelector("input");
+  const button = wrap.querySelector(".password-toggle");
+  if (!input || !button) return;
+
+  button.addEventListener("click", () => {
+    const willShow = input.type === "password";
+    input.type = willShow ? "text" : "password";
+    button.setAttribute("aria-pressed", String(willShow));
+    button.setAttribute("aria-label", willShow ? "Masquer le mot de passe" : "Afficher le mot de passe");
+    button.setAttribute("title", willShow ? "Masquer le mot de passe" : "Afficher le mot de passe");
+    input.focus();
+  });
+});
 </script>
 </body>
 </html>
