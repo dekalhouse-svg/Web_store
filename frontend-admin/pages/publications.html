@@ -69,7 +69,10 @@
 <script src="../js/auth.js"></script>
 <script>
   let publications = [];
-  let activeStatus = "all";
+  const initialParams = new URLSearchParams(window.location.search);
+  let activeStatus = ["EN_ATTENTE", "PUBLIE", "REJETE", "SUSPENDU"].includes(initialParams.get("status")) ? initialParams.get("status") : "all";
+  const activeType = ["WEB", "PWA"].includes(initialParams.get("type")) ? initialParams.get("type") : "";
+  document.querySelectorAll(".filter-chip").forEach((chip) => chip.classList.toggle("active", chip.dataset.status === activeStatus));
   loadPublications();
 
   document.getElementById("searchInput").addEventListener("input", render);
@@ -97,7 +100,8 @@
     const filtered = publications.filter((p) => {
       const matchesStatus = activeStatus === "all" || p.status === activeStatus;
       const matchesSearch = p.name.toLowerCase().includes(search) || p.developer_name.toLowerCase().includes(search);
-      return matchesStatus && matchesSearch;
+      const matchesType = !activeType || p.type === activeType;
+      return matchesStatus && matchesSearch && matchesType;
     });
 
     const body = document.getElementById("tableBody");

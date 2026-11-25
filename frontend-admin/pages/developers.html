@@ -51,6 +51,7 @@
         <table>
           <thead>
             <tr>
+              <th>Clé</th>
               <th>Nom</th>
               <th>Username</th>
               <th>E-mail</th>
@@ -138,6 +139,7 @@
       .map(
         (d) => `
         <tr>
+          <td><code title="Identifiant ${d.id}">#${d.id}</code></td>
           <td>${escapeHtml(d.display_name)}</td>
           <td>${escapeHtml(d.username)}</td>
           <td>${escapeHtml(d.email)}</td>

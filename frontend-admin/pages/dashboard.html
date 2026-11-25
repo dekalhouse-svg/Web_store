@@ -53,10 +53,10 @@
       <div class="card">
         <div class="card-header"><h2>Activité des visiteurs</h2></div>
         <div class="stat-grid">
-          <div class="stat-card"><div class="value" id="generalVisitors">0</div><div class="label">Visiteurs uniques</div></div>
-          <div class="stat-card"><div class="value" id="generalProjectVisits">0</div><div class="label">Visites de fiches</div></div>
-          <div class="stat-card"><div class="value" id="generalVisitClicks">0</div><div class="label">Clics « Visiter »</div></div>
-          <div class="stat-card"><div class="value" id="generalInstalls">0</div><div class="label">Installations PWA</div></div>
+          <a class="stat-card stat-card-link" href="visitor-analytics.html"><div class="value" id="generalVisitors">0</div><div class="label">Visiteurs uniques</div><span class="stat-card-arrow" aria-hidden="true">↗</span></a>
+          <a class="stat-card stat-card-link" href="project-analytics.html"><div class="value" id="generalProjectVisits">0</div><div class="label">Visites de fiches</div><span class="stat-card-arrow" aria-hidden="true">↗</span></a>
+          <a class="stat-card stat-card-link" href="project-analytics.html"><div class="value" id="generalVisitClicks">0</div><div class="label">Clics « Visiter »</div><span class="stat-card-arrow" aria-hidden="true">↗</span></a>
+          <a class="stat-card stat-card-link" href="project-analytics.html"><div class="value" id="generalInstalls">0</div><div class="label">Installations PWA</div><span class="stat-card-arrow" aria-hidden="true">↗</span></a>
         </div>
       </div>
 
@@ -85,17 +85,18 @@
 
   function renderStats(stats) {
     const row1 = [
-      { value: stats.developers_count ?? 0, label: "Développeurs" },
-      { value: stats.visitors_count ?? 0, label: "Visiteurs enregistrés" },
-      { value: stats.published_count ?? 0, label: "Projets publiés" },
-      { value: stats.pending_count ?? 0, label: "En attente de modération" },
-      { value: stats.open_reports_count ?? 0, label: "Signalements ouverts" },
+      { value: stats.developers_count ?? 0, label: "Développeurs", href: "developers.html" },
+      { value: stats.visitors_count ?? 0, label: "Visiteurs enregistrés", href: "visitor-analytics.html" },
+      { value: stats.published_count ?? 0, label: "Projets publiés", href: "publications.html?status=PUBLIE" },
+      { value: stats.pending_count ?? 0, label: "En attente de modération", href: "publications.html?status=EN_ATTENTE" },
+      { value: stats.open_reports_count ?? 0, label: "Signalements ouverts", href: "reports.html" },
+      { value: stats.suspended_developers_count ?? 0, label: "Comptes développeurs suspendus", href: "suspended-developers.html" },
     ];
     const row2 = [
-      { value: stats.web_count ?? 0, label: "Projets WEB" },
-      { value: stats.pwa_count ?? 0, label: "Projets PWA" },
-      { value: stats.rejected_count ?? 0, label: "Projets rejetés" },
-      { value: stats.suspended_count ?? 0, label: "Projets suspendus" },
+      { value: stats.web_count ?? 0, label: "Projets WEB", href: "publications.html?type=WEB" },
+      { value: stats.pwa_count ?? 0, label: "Projets PWA", href: "publications.html?type=PWA" },
+      { value: stats.rejected_count ?? 0, label: "Projets rejetés", href: "publications.html?status=REJETE" },
+      { value: stats.suspended_count ?? 0, label: "Projets suspendus", href: "publications.html?status=SUSPENDU" },
     ];
 
     const grids = document.querySelectorAll(".stat-grid");
@@ -128,7 +129,7 @@
   }
 
   function cardHtml(c) {
-    return `<div class="stat-card"><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`;
+    return `<a class="stat-card stat-card-link" href="${c.href || 'developers.html'}" aria-label="${c.label} : ${c.value}. Ouvrir la section"><div class="value">${c.value}</div><div class="label">${c.label}</div><span class="stat-card-arrow" aria-hidden="true">↗</span></a>`;
   }
 </script>
 </body>
