@@ -69,10 +69,16 @@
     submitBtn.disabled = true;
 
     try {
-      await WebStoreDevAPI.login({
-        email: document.getElementById("email").value.trim(),
-        password: document.getElementById("password").value,
-      });
+      const email = document.getElementById("email").value.trim();
+      const data = await WebStoreDevAPI.login({ email, password: document.getElementById("password").value });
+      if (data?.suspended) {
+        sessionStorage.setItem("webstore_suspended_email", email);
+        sessionStorage.setItem("webstore_suspension_reason", data.suspension_reason || "Aucun motif communiqué.");
+        sessionStorage.setItem("webstore_appeal_status", data.appeal_status || "AUCUNE");
+        sessionStorage.setItem("webstore_appeal_message", data.appeal_message || "");
+        window.location.href = "suspended.html";
+        return;
+      }
       window.location.href = "dashboard.html";
     } catch (err) {
       messageBox.innerHTML = `<div class="form-message error">${String(err.message || "Identifiants invalides.").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}</div>`;
