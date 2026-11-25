@@ -1,4 +1,4 @@
-import hashlib, secrets, base64, re, json, hmac
+import hashlib, secrets, base64, re, json, hmac, uuid
 from html import escape as html_escape
 from datetime import timedelta
 from urllib.request import Request, urlopen
@@ -836,19 +836,18 @@ def dev_register(request):
         validate_email(email)
     except ValidationError:
         return err("Adresse e-mail invalide.", 400)
-    if User.objects.filter(Q(username__iexact=username) | Q(email__iexact=email)).exists():
-        return err("Ce compte existe déjà.", 409)
-    if PendingDeveloperRegistration.objects.filter(
-        Q(username__iexact=username) | Q(email__iexact=email)
-    ).exclude(email=email).exists():
-        return err("Ce nom d'utilisateur est déjà utilisé.", 409)
+    if User.objects.filter(email__iexact=email).exists():
+        return err("Cette adresse e-mail est déjà utilisée.", 409)
+    if phone and (DeveloperProfile.objects.filter(phone=phone).exists() or
+                  PendingDeveloperRegistration.objects.filter(phone=phone).exclude(email=email).exists()):
+        return err("Ce numéro de téléphone est déjà utilisé.", 409)
 
     if not (settings.BREVO_API_KEY or (
         settings.EMAIL_PROVIDER == "smtp" and getattr(settings, "EMAIL_HOST", "")
     )):
         return err("Le service d'e-mail n'est pas configuré. Contactez l'administration.", 503)
 
-    candidate = User(username=username, email=email, first_name=full)
+    candidate = User(username="developer", email=email, first_name=full)
     try:
         validate_password(password, user=candidate)
     except ValidationError as exc:
@@ -922,13 +921,18 @@ def dev_verify_email(request):
                 if pending.attempts >= settings.EMAIL_CODE_MAX_ATTEMPTS:
                     return err("Trop de tentatives. Recommencez votre inscription.", 429)
                 return err("Code invalide.", 400)
-            if User.objects.filter(Q(username__iexact=pending.username) | Q(email__iexact=pending.email)).exists():
+            if User.objects.filter(email__iexact=pending.email).exists():
                 pending.delete()
-                return err("Ce compte existe déjà. Recommencez avec une autre adresse ou un autre username.", 409)
-            user = User(username=pending.username, email=pending.email, first_name=pending.full_name)
+                return err("Cette adresse e-mail est déjà utilisée. Recommencez avec une autre adresse.", 409)
+            if DeveloperProfile.objects.filter(phone=pending.phone).exclude(phone="").exists():
+                pending.delete()
+                return err("Ce numéro de téléphone est déjà utilisé.", 409)
+            # Le username Django reste un identifiant technique unique. Le username public
+            # est conservé dans DeveloperProfile et peut être partagé entre développeurs.
+            user = User(username=f"dev_{uuid.uuid4().hex}", email=pending.email, first_name=pending.full_name)
             user.password = pending.password_hash
             user.save(force_insert=True)
-            DeveloperProfile.objects.create(user=user, phone=pending.phone, email_verified=True)
+            DeveloperProfile.objects.create(user=user, phone=pending.phone, public_username=pending.username, email_verified=True)
             pending.delete()
         else:
             # Compatibilité temporaire avec les inscriptions commencées avant cette mise à jour.
@@ -955,7 +959,7 @@ def dev_verify_email(request):
     return ok({
         "message": "E-mail vérifié.",
         "token": issue_token(user, "dev"),
-        "user": {"id": user.id, "username": user.username, "email": user.email,
+        "user": {"id": user.id, "username": user.developer_profile.public_username or user.username, "email": user.email,
                  "full_name": user.get_full_name()},
     })
 
@@ -1082,7 +1086,7 @@ def dev_login(request):
         "token": issue_token(user, "dev"),
         "user": {
             "id": user.id,
-            "username": user.username,
+            "username": user.developer_profile.public_username or user.username,
             "email": user.email,
             "full_name": user.get_full_name(),
         },
@@ -1205,7 +1209,7 @@ def dev_me(request):
         p.save(update_fields=["phone", "avatar_data"])
     elif request.method != "GET":
         return err("Méthode non autorisée.", 405)
-    return ok({"id":u.id,"full_name":u.get_full_name(),"username":u.username,"email":u.email,
+    return ok({"id":u.id,"full_name":u.get_full_name(),"username":u.developer_profile.public_username or u.username,"email":u.email,
                "phone":p.phone,"avatar_data":p.avatar_data,"status":p.status,"email_verified":p.email_verified})
 
 
@@ -2062,7 +2066,7 @@ def admin_developers(request):
     qs=DeveloperProfile.objects.select_related("user").filter(email_verified=True, user__is_staff=False)
     s=request.GET.get("search","").strip()
     if s: qs=qs.filter(Q(user__username__icontains=s)|Q(user__email__icontains=s)|Q(user__first_name__icontains=s))
-    return ok([{"id":p.user.id,"display_name":p.user.get_full_name() or p.user.username,"username":p.user.username,"email":p.user.email,"created_at":p.user.date_joined.isoformat(),"status":p.status} for p in qs.order_by("-user__date_joined")])
+    return ok([{"id":p.user.id,"display_name":p.user.get_full_name() or p.user.username,"username":p.public_username or p.user.username,"email":p.user.email,"created_at":p.user.date_joined.isoformat(),"status":p.status} for p in qs.order_by("-user__date_joined")])
 
 @admin_only
 def admin_reports(request):
@@ -2099,7 +2103,7 @@ def admin_reports(request):
 @admin_only
 def admin_suspended_developers(request):
     qs = DeveloperProfile.objects.select_related("user").filter(status="SUSPENDU", email_verified=True, user__is_staff=False).order_by("-user__date_joined")
-    return ok([{"id":p.user_id,"display_name":p.user.get_full_name() or p.user.username,"username":p.user.username,
+    return ok([{"id":p.user_id,"display_name":p.user.get_full_name() or p.user.username,"username":p.public_username or p.user.username,
                 "email":p.user.email,"created_at":p.user.date_joined.isoformat(),"suspension_reason":p.suspension_reason,
                 "appeal_message":p.appeal_message,"appeal_status":p.appeal_status,
                 "appealed_at":p.appealed_at.isoformat() if p.appealed_at else None} for p in qs])
@@ -2115,7 +2119,7 @@ def admin_developer_detail(request,user_id):
     p=DeveloperProfile.objects.select_related("user").filter(user_id=user_id, user__is_staff=False).first()
     if not p:return err("Développeur introuvable.",404)
     u=p.user; projects=Project.objects.filter(developer=u)
-    return ok({"id":u.id,"display_name":u.get_full_name() or u.username,"username":u.username,"email":u.email,"created_at":u.date_joined.isoformat(),"status":p.status,
+    return ok({"id":u.id,"display_name":u.get_full_name() or u.username,"username":p.public_username or u.username,"email":u.email,"created_at":u.date_joined.isoformat(),"status":p.status,
                "suspension_reason":p.suspension_reason,"appeal_message":p.appeal_message,"appeal_status":p.appeal_status,
                "appealed_at":p.appealed_at.isoformat() if p.appealed_at else None,
                "projects":[{"id":x.id,"name":x.name,"status":x.status} for x in projects],

@@ -25,6 +25,7 @@ class DeveloperProfile(models.Model):
     STATUS_CHOICES = [("ACTIF","ACTIF"),("SUSPENDU","SUSPENDU")]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="developer_profile")
     phone = models.CharField(max_length=40, blank=True)
+    public_username = models.CharField(max_length=150, blank=True, default="")
     avatar_data = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="ACTIF")
     suspension_reason = models.TextField(blank=True)
@@ -32,6 +33,9 @@ class DeveloperProfile(models.Model):
     appeal_status = models.CharField(max_length=20, choices=[("AUCUNE", "Aucune"), ("EN_ATTENTE", "En attente"), ("ACCEPTEE", "Acceptée")], default="AUCUNE")
     appealed_at = models.DateTimeField(null=True, blank=True)
     email_verified = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["phone"], condition=~models.Q(phone=""), name="uniq_developer_profile_phone")]
     verification_code = models.CharField(max_length=20, blank=True)
     reset_code = models.CharField(max_length=20, blank=True)
     code_created_at = models.DateTimeField(null=True, blank=True)
@@ -235,7 +239,7 @@ class EmailCode(models.Model):
 class PendingDeveloperRegistration(models.Model):
     """Inscription en attente : aucun compte Django n'existe avant validation e-mail."""
     full_name = models.CharField(max_length=150)
-    username = models.CharField(max_length=150, unique=True)
+    username = models.CharField(max_length=150)
     email = models.EmailField(max_length=254, unique=True)
     phone = models.CharField(max_length=40, blank=True)
     password_hash = models.CharField(max_length=256)
@@ -248,8 +252,8 @@ class PendingDeveloperRegistration(models.Model):
     class Meta:
         indexes = [models.Index(fields=["expires_at"])]
         constraints = [
-            models.UniqueConstraint(Lower("username"), name="uniq_pending_dev_username_ci"),
             models.UniqueConstraint(Lower("email"), name="uniq_pending_dev_email_ci"),
+            models.UniqueConstraint(fields=["phone"], condition=~models.Q(phone=""), name="uniq_pending_dev_phone"),
         ]
 
 
