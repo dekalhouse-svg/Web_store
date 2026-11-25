@@ -2,6 +2,25 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.functions import Lower
 
+
+class AdminRole(models.Model):
+    """Sépare durablement le fondateur des comptes administrateurs."""
+    FOUNDER = "FOUNDER"
+    ADMIN = "ADMIN"
+    ROLE_CHOICES = [(FOUNDER, "Fondateur"), (ADMIN, "Administrateur")]
+
+    user = models.OneToOneField(User, on_delete=models.PROTECT, related_name="admin_role")
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="created_admin_accounts")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=["role"], condition=models.Q(role="FOUNDER"),
+            name="store_single_founder_role",
+        )]
+
+
 class DeveloperProfile(models.Model):
     STATUS_CHOICES = [("ACTIF","ACTIF"),("SUSPENDU","SUSPENDU")]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="developer_profile")

@@ -20,7 +20,7 @@ from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.utils.text import slugify
-from .models import DeveloperProfile, Category, Project, Comment, Report, Event, AuthToken, Message, ModerationLog, Visitor, EmailCode, PendingDeveloperRegistration, Favorite, CommentReport, VisitorActivity, CategoryRelation, SponsoredCampaign, SponsoredCampaignEvent, LoginAttemptByIP, RateLimitBucket, AdminPasskey, AdminAuthChallenge, Notification, PushSubscription
+from .models import DeveloperProfile, Category, Project, Comment, Report, Event, AuthToken, Message, ModerationLog, Visitor, EmailCode, PendingDeveloperRegistration, Favorite, CommentReport, VisitorActivity, CategoryRelation, SponsoredCampaign, SponsoredCampaignEvent, LoginAttemptByIP, RateLimitBucket, AdminPasskey, AdminAuthChallenge, Notification, PushSubscription, AdminRole
 from .telegram_security import notify_admin_login
 
 def json_body(request):
@@ -132,6 +132,23 @@ def require(kind):
 
 def admin_only(fn):
     return require("admin")(fn)
+
+def founder_only(fn):
+    """Réserve les opérations de gouvernance au fondateur enregistré en base."""
+    @wraps(fn)
+    def wrapped(request, *args, **kwargs):
+        user = auth_user(request, "admin")
+        if not user:
+            return err("Authentification requise.", 401)
+        request.api_user = user
+        if not AdminRole.objects.filter(user=user, role=AdminRole.FOUNDER).exists():
+            return err("Cette opération est réservée au fondateur.", 403)
+        return fn(request, *args, **kwargs)
+    return wrapped
+
+def _admin_role_name(user):
+    role = AdminRole.objects.filter(user=user).values_list("role", flat=True).first()
+    return role or (AdminRole.ADMIN if user.is_staff else "")
 
 def _safe_public_fetch(url, max_bytes, redirects=3):
     """Télécharge une ressource HTTP(S) publique sans suivre de redirection non vérifiée.
@@ -1517,13 +1534,66 @@ def _admin_mfa_row(request):
 
 
 @csrf_exempt
+@founder_only
+def admin_administrators(request):
+    """API de création/liste des comptes ADMIN, sans interface dashboard."""
+    if request.method == "GET":
+        rows = User.objects.filter(is_staff=True, admin_role__role=AdminRole.ADMIN).order_by("date_joined")
+        return ok([{"id": u.id, "username": u.username, "email": u.email,
+                    "full_name": u.get_full_name(), "created_at": u.date_joined.isoformat(),
+                    "role": AdminRole.ADMIN}
+                   for u in rows])
+    if request.method != "POST":
+        return err("Méthode non autorisée.", 405)
+    body = json_body(request)
+    if not isinstance(body, dict):
+        return err("Données invalides.", 400)
+    username = str(body.get("username", "")).strip()
+    email = str(body.get("email", "")).strip().lower()
+    first_name = str(body.get("first_name", "")).strip()
+    last_name = str(body.get("last_name", "")).strip()
+    password = body.get("password", "")
+    if not username or len(username) > 150 or not re.fullmatch(r"[\w.@+-]+", username, re.UNICODE):
+        return err("Nom d'utilisateur invalide.", 400)
+    if not email or len(email) > 254:
+        return err("Adresse e-mail obligatoire et valide.", 400)
+    try:
+        validate_email(email)
+    except ValidationError:
+        return err("Adresse e-mail invalide.", 400)
+    if not isinstance(password, str) or not password:
+        return err("Mot de passe obligatoire.", 400)
+    if User.objects.filter(username__iexact=username).exists():
+        return err("Ce nom d'utilisateur est déjà utilisé.", 409)
+    if User.objects.filter(email__iexact=email).exists():
+        return err("Cette adresse e-mail est déjà utilisée.", 409)
+    try:
+        with transaction.atomic():
+            user = User(username=username, email=email, first_name=first_name[:150],
+                        last_name=last_name[:150], is_active=True, is_staff=True,
+                        is_superuser=False)
+            user.set_password(password)
+            user.full_clean(exclude=["last_login", "date_joined"])
+            validate_password(password, user=user)
+            user.save()
+            AdminRole.objects.create(user=user, role=AdminRole.ADMIN, created_by=request.api_user)
+    except ValidationError as exc:
+        return err(" ".join(exc.messages), 400)
+    except Exception:
+        return err("Impossible de créer cet administrateur. Vérifiez les informations.", 400)
+    return ok({"message": "Compte administrateur créé. Transmettez ses identifiants de manière sécurisée.",
+               "administrator": {"id": user.id, "username": user.username, "email": user.email,
+                                 "full_name": user.get_full_name(), "role": AdminRole.ADMIN}}, 201)
+
+
+@csrf_exempt
 @admin_only
 def admin_me(request):
     if request.method != "GET":
         return err("Méthode non autorisée.", 405)
     u = request.api_user
     return ok({"id": u.id, "username": u.username, "email": u.email,
-               "full_name": u.get_full_name(), "passkeys": AdminPasskey.objects.filter(user=u).count()})
+               "full_name": u.get_full_name(), "role": _admin_role_name(u), "passkeys": AdminPasskey.objects.filter(user=u).count()})
 
 
 @csrf_exempt
@@ -1675,7 +1745,7 @@ def admin_passkey_login_verify(request):
             user = row.user
             row.delete()
             return ok({"token": issue_token(user, "admin", request), "user": {"id": user.id, "email": user.email,
-                       "full_name": user.get_full_name()}})
+                       "full_name": user.get_full_name(), "role": _admin_role_name(user)}})
         except Exception:
             row.attempts += 1
             row.save(update_fields=["attempts"])
@@ -1737,7 +1807,7 @@ def admin_passkey_fallback_verify(request):
         user = row.user
         row.delete()
         return ok({"token": issue_token(user, "admin", request), "user": {"id": user.id, "email": user.email,
-                   "full_name": user.get_full_name()}})
+                   "full_name": user.get_full_name(), "role": _admin_role_name(user)}})
 
 
 @csrf_exempt
@@ -1772,7 +1842,7 @@ def admin_login(request):
                        "options": json.loads(options_json(options)), "expires_in": 300})
         except Exception:
             return err("Impossible de préparer la vérification biométrique. Réessayez.", 503)
-    return ok({"token": issue_token(user, "admin", request), "user": {"id": user.id, "email": user.email, "full_name": user.get_full_name()}})
+    return ok({"token": issue_token(user, "admin", request), "user": {"id": user.id, "email": user.email, "full_name": user.get_full_name(), "role": _admin_role_name(user)}})
 
 @csrf_exempt
 @admin_only
@@ -1945,7 +2015,7 @@ def public_recommendations(request):
 
 @admin_only
 def admin_developers(request):
-    qs=DeveloperProfile.objects.select_related("user").filter(email_verified=True)
+    qs=DeveloperProfile.objects.select_related("user").filter(email_verified=True, user__is_staff=False)
     s=request.GET.get("search","").strip()
     if s: qs=qs.filter(Q(user__username__icontains=s)|Q(user__email__icontains=s)|Q(user__first_name__icontains=s))
     return ok([{"id":p.user.id,"display_name":p.user.get_full_name() or p.user.username,"username":p.user.username,"email":p.user.email,"created_at":p.user.date_joined.isoformat(),"status":p.status} for p in qs.order_by("-user__date_joined")])
@@ -1953,11 +2023,11 @@ def admin_developers(request):
 @admin_only
 def admin_developer_detail(request,user_id):
     if request.method=="DELETE":
-        p=DeveloperProfile.objects.select_related("user").filter(user_id=user_id).first()
+        p=DeveloperProfile.objects.select_related("user").filter(user_id=user_id, user__is_staff=False).first()
         if not p: return err("Développeur introuvable.",404)
         p.user.delete()
         return ok(None,204)
-    p=DeveloperProfile.objects.select_related("user").filter(user_id=user_id).first()
+    p=DeveloperProfile.objects.select_related("user").filter(user_id=user_id, user__is_staff=False).first()
     if not p:return err("Développeur introuvable.",404)
     u=p.user; projects=Project.objects.filter(developer=u)
     return ok({"id":u.id,"display_name":u.get_full_name() or u.username,"username":u.username,"email":u.email,"created_at":u.date_joined.isoformat(),"status":p.status,
@@ -1968,7 +2038,7 @@ def admin_developer_detail(request,user_id):
 @admin_only
 def admin_developer_suspend(request,user_id):
     if request.method!="POST":return err("Méthode non autorisée.",405)
-    p=DeveloperProfile.objects.filter(user_id=user_id).first()
+    p=DeveloperProfile.objects.filter(user_id=user_id, user__is_staff=False).first()
     if not p:return err("Développeur introuvable.",404)
     p.status="SUSPENDU";p.user.is_active=False;p.user.save(update_fields=["is_active"]);p.save(update_fields=["status"])
     return ok({"message":"Compte suspendu."})
@@ -1976,7 +2046,7 @@ def admin_developer_suspend(request,user_id):
 @admin_only
 def admin_developer_reactivate(request,user_id):
     if request.method!="POST":return err("Méthode non autorisée.",405)
-    p=DeveloperProfile.objects.filter(user_id=user_id).first()
+    p=DeveloperProfile.objects.filter(user_id=user_id, user__is_staff=False).first()
     if not p:return err("Développeur introuvable.",404)
     p.status="ACTIF";p.user.is_active=True;p.user.save(update_fields=["is_active"]);p.save(update_fields=["status"])
     return ok({"message":"Compte réactivé."})
