@@ -45,6 +45,7 @@ urlpatterns = [
 
     path("api/admin/login/", views.admin_login),
     path("api/admin/me/", views.admin_me),
+    path("api/admin/administrators/", views.admin_administrators),
     path("api/admin/password/change/", views.admin_password_change),
     path("api/admin/passkeys/", views.admin_passkey_list),
     path("api/admin/passkeys/register/options/", views.admin_passkey_register_options),
@@ -77,6 +78,5 @@ urlpatterns = [
     path("api/admin/publications/<int:project_id>/approve/", views.admin_publication_approve),
     path("api/admin/publications/<int:project_id>/feature/", views.admin_publication_feature),
     path("api/admin/publications/<int:project_id>/reject/", views.admin_publication_reject),
-    path("api/admin/publications/<int:project_id>/suspend/", views.admin_publication_suspend),
     path("api/admin/publications/<int:project_id>/suspend/", views.admin_publication_suspend),
 ]
