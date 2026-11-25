@@ -10,7 +10,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
@@ -996,7 +996,7 @@ LOGIN_MAX_FAILED_ATTEMPTS = 3
 LOGIN_BLOCK_SECONDS = 45
 
 
-def _authenticate_limited(email, kind, password, request=None):
+def _authenticate_limited(email, kind, password, request=None, allow_inactive=False):
     """Authentifie un compte avec un compteur d'échecs persistant par e-mail/espace."""
     email = email.strip().lower()[:254]
     if not email or not isinstance(password, str):
@@ -1019,9 +1019,13 @@ def _authenticate_limited(email, kind, password, request=None):
         user_record = User.objects.filter(email__iexact=email)
         if kind == "admin":
             user_record = user_record.filter(is_staff=True)
-        user_row = user_record.only("username").first()
+        user_row = user_record.only("username", "password", "is_active").first()
         username = user_row.username if user_row else "__invalid_login__"
-        user = authenticate(username=username, password=password)
+        user = None
+        if user_row and allow_inactive and not user_row.is_active and check_password(password, user_row.password):
+            user = user_row
+        else:
+            user = authenticate(username=username, password=password)
         if user:
             attempt.delete()
             return user, False
@@ -1061,16 +1065,19 @@ def dev_login(request):
     if not isinstance(b, dict):
         return err("Données de connexion invalides.", 400)
     email = str(b.get("email", "")).strip()
-    user, blocked = _authenticate_limited(email, "dev", b.get("password", ""), request)
+    user, blocked = _authenticate_limited(email, "dev", b.get("password", ""), request, allow_inactive=True)
     if blocked:
         return err("Trop de tentatives. Réessayez dans 45 secondes.", 429)
     if not user or not hasattr(user, "developer_profile"):
         return err("Identifiants invalides.", 401)
     profile = user.developer_profile
-    if profile.status != "ACTIF":
-        return err("Compte non actif.", 401)
     if not profile.email_verified:
         return err("E-mail non vérifié. Consultez votre boîte de réception et validez votre adresse.", 401)
+    if profile.status == "SUSPENDU":
+        return ok({"suspended": True, "suspension_reason": profile.suspension_reason or "Aucun motif communiqué.",
+                   "appeal_status": profile.appeal_status, "appeal_message": profile.appeal_message})
+    if not user.is_active:
+        return err("Compte non actif.", 401)
     return ok({
         "token": issue_token(user, "dev"),
         "user": {
@@ -1080,6 +1087,42 @@ def dev_login(request):
             "full_name": user.get_full_name(),
         },
     })
+
+
+@csrf_exempt
+def dev_suspension_appeal(request):
+    if request.method != "POST":
+        return err("Méthode non autorisée.", 405)
+    if _rate_limited(request, "dev_suspension_appeal", 8, 3600, identity=hash_token(request.META.get("HTTP_USER_AGENT", "")[:200])):
+        return err("Trop de tentatives. Réessayez plus tard.", 429)
+    data = json_body(request)
+    email = str(data.get("email", "")).strip().lower()
+    password = data.get("password", "")
+    action = str(data.get("action", "")).strip().lower()
+    message = str(data.get("message", "")).strip()
+    user = User.objects.filter(email__iexact=email, is_staff=False).first()
+    if not user or not isinstance(password, str) or not check_password(password, user.password) or not hasattr(user, "developer_profile"):
+        return err("Identifiants invalides.", 403)
+    profile = user.developer_profile
+    if profile.status != "SUSPENDU":
+        return err("Ce compte n'est pas suspendu.", 409)
+    if action == "accept":
+        profile.appeal_status = "ACCEPTEE"
+        profile.appeal_message = ""
+        profile.appealed_at = timezone.now()
+        profile.save(update_fields=["appeal_status", "appeal_message", "appealed_at"])
+        return ok({"message": "Vous avez pris connaissance de la suspension."})
+    if action == "protest":
+        if len(message) < 10:
+            return err("Votre justification doit contenir au moins 10 caractères.")
+        if len(message) > 5000:
+            return err("Votre justification est trop longue.")
+        profile.appeal_message = message
+        profile.appeal_status = "EN_ATTENTE"
+        profile.appealed_at = timezone.now()
+        profile.save(update_fields=["appeal_message", "appeal_status", "appealed_at"])
+        return ok({"message": "Votre contestation a été transmise à l'administration."})
+    return err("Action invalide.")
 
 
 @csrf_exempt
@@ -1874,7 +1917,8 @@ def admin_comment_restore(request, comment_id):
 def admin_dashboard(request):
     qs=Project.objects.all()
     pending=qs.filter(status="EN_ATTENTE")
-    return ok({"developers_count":DeveloperProfile.objects.filter(email_verified=True).count(),
+    return ok({"developers_count":DeveloperProfile.objects.filter(email_verified=True, user__is_staff=False).count(),
+               "suspended_developers_count":DeveloperProfile.objects.filter(status="SUSPENDU", email_verified=True, user__is_staff=False).count(),
                "visitors_count":Visitor.objects.count(),
                "published_count":qs.filter(status="PUBLIE").count(),
                "pending_count":pending.count(),"open_reports_count":Report.objects.filter(status="OUVERT").count()+CommentReport.objects.filter(status="OUVERT").count(),
@@ -2021,6 +2065,47 @@ def admin_developers(request):
     return ok([{"id":p.user.id,"display_name":p.user.get_full_name() or p.user.username,"username":p.user.username,"email":p.user.email,"created_at":p.user.date_joined.isoformat(),"status":p.status} for p in qs.order_by("-user__date_joined")])
 
 @admin_only
+def admin_reports(request):
+    if request.method == "POST":
+        data = json_body(request)
+        kind = str(data.get("kind", ""))
+        report_id = data.get("id")
+        model = CommentReport if kind == "comment" else Report if kind == "project" else None
+        if model is None:
+            return err("Type de signalement invalide.")
+        report = model.objects.filter(pk=report_id).first()
+        if not report:
+            return err("Signalement introuvable.", 404)
+        report.status = "TRAITE"
+        report.save(update_fields=["status"])
+        return ok({"message": "Signalement marqué comme traité."})
+    if request.method != "GET":
+        return err("Méthode non autorisée.", 405)
+    items = []
+    for r in Report.objects.select_related("project", "project__developer").order_by("-created_at"):
+        items.append({"id": r.id, "kind": "project", "project_name": r.project.name,
+                      "developer_name": r.project.developer.get_full_name() or r.project.developer.username,
+                      "author_name": "", "reason": r.reason, "description": r.description,
+                      "status": r.status, "created_at": r.created_at.isoformat()})
+    for r in CommentReport.objects.select_related("comment", "comment__project", "comment__project__developer").order_by("-created_at"):
+        items.append({"id": r.id, "kind": "comment", "project_name": r.comment.project.name,
+                      "developer_name": r.comment.project.developer.get_full_name() or r.comment.project.developer.username,
+                      "author_name": r.comment.author_name, "reason": r.reason, "description": r.description,
+                      "status": r.status, "created_at": r.created_at.isoformat()})
+    items.sort(key=lambda item: item["created_at"], reverse=True)
+    return ok(items)
+
+
+@admin_only
+def admin_suspended_developers(request):
+    qs = DeveloperProfile.objects.select_related("user").filter(status="SUSPENDU", email_verified=True, user__is_staff=False).order_by("-user__date_joined")
+    return ok([{"id":p.user_id,"display_name":p.user.get_full_name() or p.user.username,"username":p.user.username,
+                "email":p.user.email,"created_at":p.user.date_joined.isoformat(),"suspension_reason":p.suspension_reason,
+                "appeal_message":p.appeal_message,"appeal_status":p.appeal_status,
+                "appealed_at":p.appealed_at.isoformat() if p.appealed_at else None} for p in qs])
+
+
+@admin_only
 def admin_developer_detail(request,user_id):
     if request.method=="DELETE":
         p=DeveloperProfile.objects.select_related("user").filter(user_id=user_id, user__is_staff=False).first()
@@ -2031,6 +2116,8 @@ def admin_developer_detail(request,user_id):
     if not p:return err("Développeur introuvable.",404)
     u=p.user; projects=Project.objects.filter(developer=u)
     return ok({"id":u.id,"display_name":u.get_full_name() or u.username,"username":u.username,"email":u.email,"created_at":u.date_joined.isoformat(),"status":p.status,
+               "suspension_reason":p.suspension_reason,"appeal_message":p.appeal_message,"appeal_status":p.appeal_status,
+               "appealed_at":p.appealed_at.isoformat() if p.appealed_at else None,
                "projects":[{"id":x.id,"name":x.name,"status":x.status} for x in projects],
                "stats":{"total_views":Event.objects.filter(project__developer=u,type="view").count(),"total_visit_clicks":Event.objects.filter(project__developer=u,type="visit_click").count(),"total_installs":Event.objects.filter(project__developer=u,type="install").count()},
                "reports":[{"project_name":r.project.name,"reason":r.reason} for r in Report.objects.filter(project__developer=u).order_by("-created_at")]})
@@ -2040,7 +2127,13 @@ def admin_developer_suspend(request,user_id):
     if request.method!="POST":return err("Méthode non autorisée.",405)
     p=DeveloperProfile.objects.filter(user_id=user_id, user__is_staff=False).first()
     if not p:return err("Développeur introuvable.",404)
-    p.status="SUSPENDU";p.user.is_active=False;p.user.save(update_fields=["is_active"]);p.save(update_fields=["status"])
+    reason = str(json_body(request).get("reason", "")).strip()
+    if len(reason) < 5:return err("Le motif de suspension doit contenir au moins 5 caractères.")
+    if len(reason) > 5000:return err("Le motif est trop long.")
+    p.status="SUSPENDU";p.suspension_reason=reason;p.appeal_message="";p.appeal_status="AUCUNE";p.appealed_at=None
+    p.user.is_active=False;p.user.save(update_fields=["is_active"])
+    AuthToken.objects.filter(user=p.user, kind="dev").delete()
+    p.save(update_fields=["status","suspension_reason","appeal_message","appeal_status","appealed_at"])
     return ok({"message":"Compte suspendu."})
 
 @admin_only
@@ -2048,7 +2141,8 @@ def admin_developer_reactivate(request,user_id):
     if request.method!="POST":return err("Méthode non autorisée.",405)
     p=DeveloperProfile.objects.filter(user_id=user_id, user__is_staff=False).first()
     if not p:return err("Développeur introuvable.",404)
-    p.status="ACTIF";p.user.is_active=True;p.user.save(update_fields=["is_active"]);p.save(update_fields=["status"])
+    p.status="ACTIF";p.suspension_reason="";p.appeal_status="AUCUNE";p.appeal_message="";p.appealed_at=None
+    p.user.is_active=True;p.user.save(update_fields=["is_active"]);p.save(update_fields=["status","suspension_reason","appeal_status","appeal_message","appealed_at"])
     return ok({"message":"Compte réactivé."})
 
 def _send_web_push(subscription, notification):
