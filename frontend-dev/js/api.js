@@ -68,8 +68,10 @@ const API_BASE_URL = (window.WEBSTORE_API_BASE_URL || "http://127.0.0.1:8000/api
     login: async (payload) => {
       const data = await request("/dev/login/", { method: "POST", body: JSON.stringify(payload) });
       if (data?.token) setToken(data.token);
+      else if (data?.suspended) setToken(null);
       return data;
     },
+    submitSuspensionAppeal: (payload) => request("/dev/suspension/appeal/", { method: "POST", body: JSON.stringify(payload) }),
     requestPasswordReset: (email) =>
       request("/dev/password-reset/", { method: "POST", body: JSON.stringify({ email }) }),
     confirmPasswordReset: (payload) =>

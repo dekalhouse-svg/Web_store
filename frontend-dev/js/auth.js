@@ -3,7 +3,7 @@
  * n'est présent. À inclure sur chaque page nécessitant une session.
  */
 (function guardPage() {
-  const isAuthPage = /\/(login|register|verify-email|forgot-password|reset-password)\.html$/.test(
+  const isAuthPage = /\/(login|register|verify-email|forgot-password|reset-password|suspended)\.html$/.test(
     window.location.pathname
   );
 
