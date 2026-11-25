@@ -78,4 +78,5 @@ urlpatterns = [
     path("api/admin/publications/<int:project_id>/feature/", views.admin_publication_feature),
     path("api/admin/publications/<int:project_id>/reject/", views.admin_publication_reject),
     path("api/admin/publications/<int:project_id>/suspend/", views.admin_publication_suspend),
+    path("api/admin/publications/<int:project_id>/suspend/", views.admin_publication_suspend),
 ]
