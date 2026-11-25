@@ -96,6 +96,8 @@ function setupMessagesNavigation() {
     return link;
   };
 
+  getOrCreateLink("webstoreReports", "reports.html", "Signalements");
+  getOrCreateLink("webstoreSuspended", "suspended-developers.html", "Comptes suspendus");
   const link = getOrCreateLink("webstoreMessages", "messages.html", "Messages");
   getOrCreateLink("webstoreCampaigns", "campaigns.html", "Publicités");
 

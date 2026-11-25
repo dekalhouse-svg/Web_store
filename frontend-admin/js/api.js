@@ -96,13 +96,18 @@ const API_BASE_URL = (window.WEBSTORE_API_BASE_URL || "http://127.0.0.1:8000/api
     saveCategoryRelation: (category_id, neighbor_id) => request("/admin/category-relations/", { method: "POST", body: JSON.stringify({ category_id, neighbor_id }) }),
     deleteCategoryRelation: (id) => request("/admin/category-relations/", { method: "DELETE", body: JSON.stringify({ id }) }),
 
+    // Signalements
+    getReports: () => request("/admin/reports/"),
+    resolveReport: (kind, id) => request("/admin/reports/", { method: "POST", body: JSON.stringify({ kind, id }) }),
+
     // Développeurs
+    getSuspendedDevelopers: () => request("/admin/suspended-developers/"),
     getDevelopers: (params = {}) => {
       const query = new URLSearchParams(params).toString();
       return request(`/admin/developers/${query ? `?${query}` : ""}`);
     },
     getDeveloper: (id) => request(`/admin/developers/${id}/`),
-    suspendDeveloper: (id) => request(`/admin/developers/${id}/suspend/`, { method: "POST" }),
+    suspendDeveloper: (id, reason) => request(`/admin/developers/${id}/suspend/`, { method: "POST", body: JSON.stringify({ reason }) }),
     reactivateDeveloper: (id) => request(`/admin/developers/${id}/reactivate/`, { method: "POST" }),
     deleteDeveloper: (id) => request(`/admin/developers/${id}/`, { method: "DELETE" }),
     sendMessageToDeveloper: (id, payload) =>
