@@ -2,7 +2,7 @@
 let allProjects=[], categories=[], favoriteSlugs=new Set(), activeFilter='all', favoritesOnly=false, deferredInstallPrompt=null;
 const ICONS={heart:'<path d="M20.8 8.8c0 5.2-8.8 10.1-8.8 10.1S3.2 14 3.2 8.8A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/>',chevron:'<path d="m9 18 6-6-6-6"/>',sparkles:'<path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/>',code:'<path d="m8 8-4 4 4 4m8-8 4 4-4 4m-2-11-4 14"/>',tool:'<path d="M14.7 6.3a5 5 0 0 0-6.4 6.4L3 18l3 3 5.3-5.3a5 5 0 0 0 6.4-6.4L14 12l-2-2 2.7-3.7Z"/>',book:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22V5.5Z"/>',play:'<path d="m8 5 11 7-11 7V5Z"/>',briefcase:'<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',layers:'<path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5m-18 4 9 5 9-5"/>'};
 function svgIcon(name,cls=''){return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONS[name]||ICONS.layers}</svg>`}
-function esc(v){const e=document.createElement('span');e.textContent=String(v??'');return e.innerHTML}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function initials(v){return String(v||'WS').trim().split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase()}
 function applyIcon(box,p){const src=p.icon_url||p.icon_data;if(!box||!src)return;const img=new Image();img.alt='';img.loading='lazy';img.src=/^(data:|https?:\/\/)/i.test(src)?src:WebStoreAPI.getAssetUrl(src);img.onerror=()=>img.remove();box.replaceChildren(img)}
 document.addEventListener('DOMContentLoaded',initStore);
