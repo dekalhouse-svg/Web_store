@@ -4,7 +4,7 @@
 <script src="../js/config.js"></script><script src="../js/api.js"></script><script>
 const slug=new URLSearchParams(location.search).get('slug');let project=null,favorite=false;
 const heart='<svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.2-8.8 10.1-8.8 10.1S3.2 14 3.2 8.8A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/></svg>';
-function esc(v){const e=document.createElement('span');e.textContent=String(v??'');return e.innerHTML}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function safeUrl(v){try{const u=new URL(String(v||''));return ['http:','https:'].includes(u.protocol)?u.href:''}catch(_){return ''}}
 function ready(){window.dispatchEvent(new Event('webstore:content-ready'))}
 document.addEventListener('DOMContentLoaded',async()=>{if(!slug){showError('Projet introuvable.');ready();return}try{const [p]=await Promise.all([WebStoreAPI.getProject(slug),WebStoreAPI.trackVisitor().catch(()=>null)]);project=p;WebStoreAPI.trackEvent(slug,'view');WebStoreAPI.trackActivity({type:'project_open',project_slug:slug});try{const f=await WebStoreAPI.getFavorite(slug);favorite=!!f.is_favorite;project.favorites_count=f.favorites_count??project.favorites_count}catch(_){}render();loadSimilar();bindHeader()}catch(e){showError(e.message||'Impossible de charger ce projet.');}finally{ready()}});
