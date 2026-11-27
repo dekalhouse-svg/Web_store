@@ -391,7 +391,14 @@ def public_projects(request):
     category=request.GET.get("category","").strip()
     if search: qs=qs.filter(Q(name__icontains=search)|Q(description__icontains=search)|Q(tags__icontains=search))
     if category: qs=qs.filter(category__iexact=category)
-    return ok([project_list_public(p) for p in qs.order_by("-featured", "-created_at")])
+    try:
+        page = max(1, int(request.GET.get("page", "1")))
+        page_size = min(100, max(1, int(request.GET.get("page_size", "100"))))
+    except (TypeError, ValueError):
+        return err("Paramètres de pagination invalides.", 400)
+    start = (page - 1) * page_size
+    items = qs.order_by("-featured", "-created_at")[start:start + page_size]
+    return ok([project_list_public(p) for p in items])
 
 @csrf_exempt
 def public_project_icon(request, slug):
@@ -602,11 +609,18 @@ def project_reports(request,slug):
     p=Project.objects.filter(slug=slug, status__in=["EN_ATTENTE", "PUBLIE"]).first()
     if not p: return err("Projet introuvable.",404)
     if request.method!="POST": return err("Méthode non autorisée.",405)
-    if _rate_limited(request, "project_report", 5, 3600, identity=slug):
-        return err("Trop de signalements. Réessayez plus tard.", 429)
+    visitor = _visitor_from_request(request)
+    if not visitor:
+        return err("Identité visiteur invalide. Rechargez la page.", 401)
+    if _rate_limited(request, "project_report_ip", 10, 3600, identity=slug):
+        return err("Trop de signalements depuis cette connexion. Réessayez plus tard.", 429)
+    if _rate_limited(request, "project_report_visitor", 2, 3600, identity=f"{slug}:{visitor.pk}"):
+        return err("Vous avez déjà signalé ce projet récemment.", 429)
     b=json_body(request); reason=str(b.get("reason","")).strip(); description=str(b.get("description","")).strip()
     if not reason: return err("Motif requis.")
-    r=Report.objects.create(project=p,reason=reason[:200],description=description[:5000])
+    if len(reason) > 200 or len(description) > 1000:
+        return err("Le motif ou la description dépasse la longueur autorisée.")
+    r=Report.objects.create(project=p,reason=reason,description=description)
     return ok({"id":r.id,"message":"Signalement enregistré."},201)
 
 @csrf_exempt
@@ -618,9 +632,9 @@ def project_event(request,slug):
     if typ not in {"view","visit_click","install"}: return err("Type d'événement invalide.")
     visitor = _visitor_from_request(request)
     if not visitor: return err("Identité visiteur invalide. Rechargez la page.", 401)
-    if _rate_limited(request, "project_event_ip", 1000, 60, identity=f"{slug}:{typ}"):
+    if _rate_limited(request, "project_event_ip", 30, 60, identity=f"{slug}:{typ}"):
         return err("Trop d'événements depuis cette connexion.", 429)
-    if _rate_limited(request, "project_event", 60, 60, identity=f"{slug}:{typ}:{_visitor_rate_identity(request)}"):
+    if _rate_limited(request, "project_event", 5, 60, identity=f"{slug}:{typ}:{_visitor_rate_identity(request)}"):
         return err("Trop d'événements. Réessayez plus tard.", 429)
     dedupe_seconds = 1800 if typ == "view" else 60
     recent = Event.objects.filter(
@@ -1889,7 +1903,10 @@ def admin_login(request):
                        "options": json.loads(options_json(options)), "expires_in": 300})
         except Exception:
             return err("Impossible de préparer la vérification biométrique. Réessayez.", 503)
-    return ok({"token": issue_token(user, "admin", request), "user": {"id": user.id, "email": user.email, "full_name": user.get_full_name(), "role": _admin_role_name(user)}})
+    raw_mfa = secrets.token_urlsafe(48)
+    _challenge_row(user, "login", "", hash_token(raw_mfa))
+    return ok({"mfa_required": True, "email_only": True, "mfa_token": raw_mfa,
+               "options": None, "expires_in": 300})
 
 @csrf_exempt
 @admin_only
