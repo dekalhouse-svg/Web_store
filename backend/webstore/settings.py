@@ -2,9 +2,35 @@ import os
 from pathlib import Path
 import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-change-this-secret-key")
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",") if h.strip()]
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "").strip()
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "local-development-only-insecure-key-change-before-deploying"
+    else:
+        raise RuntimeError("DJANGO_SECRET_KEY doit être configurée en production.")
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:
+    if not DEBUG:
+        raise RuntimeError("DJANGO_ALLOWED_HOSTS doit contenir des hôtes explicites en production.")
+
+CORS_ALLOWED_ORIGINS = {
+    origin.strip().rstrip("/")
+    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+}
+if not CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS = {
+        "https://web-store-74me.onrender.com",
+        "https://web-store-dev.onrender.com",
+        "https://store-by-dekal.onrender.com",
+    }
+    if DEBUG:
+        CORS_ALLOWED_ORIGINS.update({
+            "http://localhost:5500", "http://127.0.0.1:5500",
+            "http://localhost:5501", "http://127.0.0.1:5501",
+            "http://localhost:8000", "http://127.0.0.1:8000",
+        })
 
 INSTALLED_APPS = [
     "django.contrib.auth", "django.contrib.contenttypes", "django.contrib.sessions",
@@ -50,7 +76,9 @@ else:
     }
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 12}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 LANGUAGE_CODE = "fr-fr"
 TIME_ZONE = os.environ.get("DJANGO_TIME_ZONE", "Africa/Lubumbashi")
@@ -95,3 +123,17 @@ if os.environ.get("EMAIL_HOST"):
 WEBPUSH_VAPID_PUBLIC_KEY = os.environ.get("WEBPUSH_VAPID_PUBLIC_KEY", "").strip()
 WEBPUSH_VAPID_PRIVATE_KEY = os.environ.get("WEBPUSH_VAPID_PRIVATE_KEY", "").strip()
 WEBPUSH_VAPID_SUBJECT = os.environ.get("WEBPUSH_VAPID_SUBJECT", "mailto:dekalhouse@gmail.com").strip()
+
+# En-têtes de sécurité HTTP (API servie par Django).
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+X_FRAME_OPTIONS = "DENY"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "true").lower() == "true"
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
