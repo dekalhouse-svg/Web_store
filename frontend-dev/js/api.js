@@ -4,14 +4,16 @@ const WebStoreDevAPI = (() => {
 
 const API_BASE_URL = (window.WEBSTORE_API_BASE_URL || "http://127.0.0.1:8000/api").replace(/\/+$/, "");
   const TOKEN_KEY = "webstore_dev_token";
+  // Supprime une éventuelle ancienne copie persistante du jeton.
+  try { localStorage.removeItem(TOKEN_KEY); } catch (_) {}
 
   function getToken() {
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
   }
 
   function setToken(token) {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
+    if (token) sessionStorage.setItem(TOKEN_KEY, token);
+    else sessionStorage.removeItem(TOKEN_KEY);
   }
 
   async function request(path, options = {}) {
