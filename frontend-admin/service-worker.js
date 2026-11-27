@@ -1,5 +1,5 @@
 /* WEB STORE Admin PWA: privilégie le réseau pour ne pas servir indéfiniment une ancienne interface. */
-const CACHE_NAME = "webstore-admin-v5";
+const CACHE_NAME = "webstore-admin-v6";
 const APP_SHELL = [
   "/index.html",
   "/offline.html",
