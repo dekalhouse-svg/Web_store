@@ -31,7 +31,21 @@
     getRecommendations: () => request("/recommendations/", { headers: visitorHeaders() }),
     getSponsoredCampaigns: () => request("/sponsored-campaign/", { headers: visitorHeaders() }),
     trackSponsoredEvent: (id, type) => request(`/sponsored-campaign/${encodeURIComponent(id)}/event/`, { method: "POST", headers: visitorHeaders(), body: JSON.stringify({ type }) }).catch(() => null),
-    getProjects: (params = {}) => request(`/projects/${new URLSearchParams(params).toString() ? `?${new URLSearchParams(params)}` : ''}`),
+    getProjects: async (params = {}) => {
+      const base = new URLSearchParams(params);
+      const all = [];
+      const pageSize = 100;
+      for (let page = 1; page <= 100; page += 1) {
+        const query = new URLSearchParams(base);
+        query.set('page', String(page));
+        query.set('page_size', String(pageSize));
+        const batch = await request(`/projects/?${query.toString()}`);
+        if (!Array.isArray(batch)) throw new Error('Réponse du catalogue invalide.');
+        all.push(...batch);
+        if (batch.length < pageSize) break;
+      }
+      return all;
+    },
     getProject: slug => request(`/projects/${encodeURIComponent(slug)}/`),
     getAssetUrl: path => /^(https?:\/\/|data:)/i.test(path || '') ? path : `${API_BASE_URL}${String(path || '').startsWith('/') ? '' : '/'}${path || ''}`,
     getFavorite: slug => request(`/projects/${encodeURIComponent(slug)}/favorite/`, { headers: visitorHeaders() }),
@@ -41,7 +55,7 @@
     updateComment: (slug, id, token, payload) => request(`/projects/${encodeURIComponent(slug)}/comments/${id}/`, { method: 'PATCH', headers: { 'X-Comment-Token': token }, body: JSON.stringify(payload) }),
     deleteComment: (slug, id, token) => request(`/projects/${encodeURIComponent(slug)}/comments/${id}/`, { method: 'DELETE', headers: { ...visitorHeaders(), 'X-Comment-Token': token } }),
     reportComment: (slug, id, payload) => request(`/projects/${encodeURIComponent(slug)}/comments/${id}/reports/`, { method: 'POST', headers: visitorHeaders(), body: JSON.stringify(payload) }),
-    postReport: (slug, payload) => request(`/projects/${encodeURIComponent(slug)}/reports/`, { method: 'POST', body: JSON.stringify(payload) }),
+    postReport: (slug, payload) => request(`/projects/${encodeURIComponent(slug)}/reports/`, { method: 'POST', headers: visitorHeaders(), body: JSON.stringify(payload) }),
     getSimilarProjects: slug => request(`/projects/${encodeURIComponent(slug)}/similar/`),
     getDeveloper: id => request(`/developers/${id}/`),
     trackEvent: (slug, type) => request(`/projects/${encodeURIComponent(slug)}/events/`, { method: 'POST', headers: visitorHeaders(), body: JSON.stringify({ type }) }).catch(() => null),
