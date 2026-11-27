@@ -88,7 +88,7 @@
 <script src="../js/auth.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
-const esc = (value) => { const n=document.createElement("span"); n.textContent=String(value ?? ""); return n.innerHTML; };
+const esc=(value)=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const number = (value) => Number(value || 0).toLocaleString("fr-FR");
 function table(headers, rows, empty) {
   if (!rows.length) return `<p class="empty-state">${empty}</p>`;

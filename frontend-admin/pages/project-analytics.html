@@ -32,7 +32,7 @@ period.addEventListener('change',()=>{const c=period.value==='custom';document.g
 document.getElementById('apply').addEventListener('click',load);
 function cell(v){const e=document.createElement('span');e.textContent=String(v??'');return e}
 function tableRows(items,key){return '<ol style="padding-left:22px">'+items.slice(0,10).map(x=>`<li style="padding:5px 0">${escapeHtml(x.name)} — ${x[key]}</li>`).join('')+'</ol>'}
-function escapeHtml(v){const e=document.createElement('span');e.textContent=String(v??'');return e.innerHTML}
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function load(){
  const params={period:period.value};if(params.period==='custom'){params.start=document.getElementById('start').value;params.end=document.getElementById('end').value;if(!params.start||!params.end){alert('Choisissez les deux dates.');return}}
  try{const d=await WebStoreAdminAPI.getProjectAnalytics(params);const t=d.totals;

@@ -122,11 +122,7 @@
     }
   }
 
-  function escapeHtml(value) {
-    const node = document.createElement("span");
-    node.textContent = String(value ?? "");
-    return node.innerHTML;
-  }
+  function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
   function cardHtml(c) {
     return `<a class="stat-card stat-card-link" href="${c.href || 'developers.html'}" aria-label="${c.label} : ${c.value}. Ouvrir la section"><div class="value">${c.value}</div><div class="label">${c.label}</div><span class="stat-card-arrow" aria-hidden="true">↗</span></a>`;
