@@ -11,7 +11,7 @@
  * Même si VERSION n'est pas changée, les fichiers sont toujours récupérés
  * sur le réseau en premier : le cache ne sert que quand on est hors ligne.
  */
-const VERSION = "2026.11.24-notifications-1";
+const VERSION = "2026.11.27-security-1";
 
 const CACHE_PREFIX = "webstore-dev-";
 const CACHE_NAME = CACHE_PREFIX + VERSION;
