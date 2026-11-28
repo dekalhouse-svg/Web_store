@@ -431,3 +431,26 @@ td{padding:14px 9px}
  .stat-card .value{font-size:23px}
  .topbar-title{font-size:14px}
 }
+
+
+/* Thème sombre global du tableau de bord développeur (préférence enregistrée dans le navigateur). */
+html[data-theme="dark"] body,
+body[data-theme="dark"]{--color-bg:#101813;--color-surface:#18231c;--color-border:#2b3a30;--color-text:#e5eee8;--color-text-muted:#a0b1a6;--color-primary-soft:#183b27;--color-sidebar-bg:#141f18;--color-sidebar-text:#c5d4ca;background:var(--color-bg);color:var(--color-text)}
+html[data-theme="dark"] .sidebar,body[data-theme="dark"] .sidebar{background:var(--color-sidebar-bg);color:var(--color-sidebar-text);border-color:var(--color-border)}
+html[data-theme="dark"] .sidebar-logo,body[data-theme="dark"] .sidebar-logo{color:var(--color-text)}
+html[data-theme="dark"] .sidebar-nav a,body[data-theme="dark"] .sidebar-nav a{color:var(--color-sidebar-text)}
+html[data-theme="dark"] .sidebar-nav a:hover,html[data-theme="dark"] .sidebar-nav a.active,body[data-theme="dark"] .sidebar-nav a:hover,body[data-theme="dark"] .sidebar-nav a.active{background:#20392a;color:#e8f5ec}
+html[data-theme="dark"] .topbar,body[data-theme="dark"] .topbar{background:var(--color-surface);border-color:var(--color-border);color:var(--color-text)}
+html[data-theme="dark"] .card,html[data-theme="dark"] .stat-card,html[data-theme="dark"] .settings-card,body[data-theme="dark"] .card,body[data-theme="dark"] .stat-card,body[data-theme="dark"] .settings-card{background:var(--color-surface);border-color:var(--color-border);color:var(--color-text)}
+html[data-theme="dark"] .btn-outline,body[data-theme="dark"] .btn-outline{background:var(--color-surface);border-color:var(--color-border);color:var(--color-text)}
+html[data-theme="dark"] input,html[data-theme="dark"] textarea,html[data-theme="dark"] select,body[data-theme="dark"] input,body[data-theme="dark"] textarea,body[data-theme="dark"] select{background:#111b15;color:var(--color-text);border-color:var(--color-border)}
+html[data-theme="dark"] th,body[data-theme="dark"] th{background:#202d24;color:#bdcbbf;border-color:var(--color-border)}
+html[data-theme="dark"] td,html[data-theme="dark"] .message-item,body[data-theme="dark"] td,body[data-theme="dark"] .message-item{border-color:var(--color-border);color:var(--color-text)}
+html[data-theme="dark"] .settings-device,body[data-theme="dark"] .settings-device{background:#111b15;border-color:var(--color-border)}
+html[data-theme="dark"] .settings-danger .settings-action,body[data-theme="dark"] .settings-danger .settings-action{background:#321d1d;color:#fecaca;border-color:#713333}
+html[data-theme="dark"] .settings-danger .settings-action:hover,body[data-theme="dark"] .settings-danger .settings-action:hover{background:#482323}
+html[data-theme="dark"] .period-tabs,body[data-theme="dark"] .period-tabs{background:#202d24}
+html[data-theme="dark"] .period-tab[aria-pressed="true"],body[data-theme="dark"] .period-tab[aria-pressed="true"]{background:#314638;color:#b8f2c9}
+html[data-theme="dark"] .overview-metric,html[data-theme="dark"] .dashboard-chart-card,body[data-theme="dark"] .overview-metric,body[data-theme="dark"] .dashboard-chart-card{background:var(--color-surface);border-color:var(--color-border)}
+html[data-theme="dark"] .overview-metric .metric-value,html[data-theme="dark"] .dashboard-chart-card h3,html[data-theme="dark"] .comparison-number,body[data-theme="dark"] .overview-metric .metric-value,body[data-theme="dark"] .dashboard-chart-card h3,body[data-theme="dark"] .comparison-number{color:var(--color-text)}
+html[data-theme="dark"] .comparison-track,body[data-theme="dark"] .comparison-track{background:#2b3a30}
