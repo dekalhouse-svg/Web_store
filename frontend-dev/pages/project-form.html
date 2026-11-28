@@ -76,8 +76,8 @@
           <div class="field">
             <label for="icon">Icône du projet</label>
             <input type="file" id="icon" accept="image/png,image/jpeg,image/webp,image/gif">
-            <small>Image uniquement, 450ko max</small>
-            <div id="iconPreview" Facultatifgin-top:10px;"></div>
+            <small>Image uniquement. Pour un affichage rapide, privilégiez une icône de 2 Mo maximum.</small>
+            <div id="iconPreview" style="margin-top:10px;"></div>
           </div>
 
           <div class="form-actions">
@@ -203,8 +203,11 @@
         submitBtn.disabled = false;
         return;
       }
-      if (iconFile.size > 2 * 1024 * 1024) {
-        messageBox.innerHTML = `<div class="form-message error">L'icône ne doit pas dépasser 2 Mo.</div>`;
+      // Conseil de poids côté navigateur : 2 Mo maximum pour accélérer le chargement.
+      // Le serveur conserve une limite de sécurité indépendante de 5 Mo.
+      if (iconFile.size > 3 * 1024 * 1024) {
+        alert("L'icône doit avoir au max 2 Mo, Choisissez une image plus légère .");
+        document.getElementById("icon").value = "";
         submitBtn.disabled = false;
         return;
       }
