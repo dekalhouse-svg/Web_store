@@ -3,6 +3,8 @@ from pathlib import Path
 import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
+# Une icône de 5 Mo encodée en Base64 dépasse 6,6 Mo dans le JSON.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "").strip()
 if not SECRET_KEY:
     if DEBUG:
