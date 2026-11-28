@@ -1,96 +1,99 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#16A34A"><title>Paramètres et sécurité — WEB STORE Dev</title>
-<link rel="manifest" href="../manifest.json"><link rel="icon" href="../icons/icon-192.png"><link rel="stylesheet" href="../css/style.css">
-<style>
-.settings-page{max-width:980px;margin:0 auto;padding-bottom:38px}
-.settings-heading{margin-bottom:25px;text-align:center}
-.settings-heading h1{margin:0 0 9px}
-.settings-heading p{max-width:620px;margin:0 auto;color:var(--color-text-muted);font-size:13px;line-height:1.7;text-align:center}
-.settings-section-title{display:flex;align-items:center;gap:11px;margin:26px 0 13px;font-size:14px;font-weight:800;color:var(--color-text)}
-.settings-section-title:before{content:"";width:4px;height:19px;border-radius:8px;background:var(--color-primary)}
-.settings-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:16px;padding:20px;margin-bottom:13px;box-shadow:0 3px 14px rgba(15,23,42,.035)}
-.settings-row{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:64px}
-.settings-row+.settings-row{border-top:1px solid var(--color-border);padding-top:16px;margin-top:16px}
-.settings-copy{flex:1;min-width:0;text-align:left}
-.settings-copy h3{font-size:14px;font-weight:750;color:var(--color-text);margin:0 0 5px}
-.settings-copy p{font-size:12px;line-height:1.6;color:var(--color-text-muted);margin:0}
-.settings-icon{width:42px;height:42px;flex:0 0 42px;border-radius:12px;background:var(--color-primary-soft);color:var(--color-primary-dark);display:flex;align-items:center;justify-content:center;font-size:18px}
-.settings-leading{display:flex;align-items:center;gap:13px;flex:1;min-width:0}
-.theme-options{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
-.theme-choice{min-width:112px;min-height:40px;padding:8px 13px;border:1px solid var(--color-border);border-radius:10px;background:var(--color-surface);color:var(--color-text);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
-.theme-choice[aria-pressed="true"]{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary-dark);box-shadow:0 0 0 2px rgba(22,163,74,.08)}
-.settings-action{width:auto;min-width:132px;min-height:40px;padding:0 15px;display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:1.25;white-space:normal;font-size:12px}
-.settings-status{margin-top:13px;padding:11px 13px;border-radius:10px;background:var(--color-primary-soft);color:var(--color-primary-dark);font-size:12px;line-height:1.5;text-align:center}
-.settings-device{font-size:12px;color:var(--color-text-muted);line-height:1.7;text-align:center;padding:10px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:10px}
-.settings-danger{border-color:#fecaca}.settings-danger .settings-icon{background:#fef2f2;color:#b91c1c}
-.settings-danger .settings-action{background:#fff;color:#b91c1c;border:1px solid #fecaca}
-.settings-danger .settings-action:hover{background:#fef2f2}
-.settings-note{font-size:11px;color:var(--color-text-muted);line-height:1.6;text-align:center;margin:17px auto 0;max-width:650px}
-@media(max-width:640px){.settings-card{padding:15px}.settings-row{align-items:flex-start;flex-direction:column;text-align:center;gap:13px}.settings-leading{width:100%;flex-direction:column;text-align:center}.settings-copy{text-align:center}.settings-icon{margin:0 auto}.settings-action{width:100%}.theme-options{width:100%}.theme-choice{flex:1;min-width:0}.settings-heading{margin-bottom:20px}}
-</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#16A34A">
+<title>Paramètres — WEB STORE Dev</title>
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
 <div class="app-shell">
-<aside class="sidebar" id="sidebar"><div class="sidebar-logo">WEB<span>STORE</span></div><nav class="sidebar-nav" aria-label="Navigation principale">
-<a href="dashboard.html">Vue générale</a><a href="projects.html">Mes projets</a><a href="project-form.html">Publier un projet</a><a href="statistics.html">Statistiques</a><a href="comments.html">Commentaires</a><a href="messages.html">Messages</a><a href="notifications.html">Notifications</a><a href="profile.html">Mon profil</a><a href="settings.html">Paramètres et sécurité</a><a href="help.html">Centre d'aide</a>
-</nav><div class="sidebar-footer"><button class="sidebar-logout" id="logoutBtn" type="button">Se déconnecter</button></div></aside>
-<main class="content"><header class="topbar"><button class="menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">☰</button><div class="topbar-title">Paramètres et sécurité</div><div></div></header>
-<div class="page settings-page">
-<header class="settings-heading"><h1>Paramètres et sécurité</h1><p>Personnalisez votre espace développeur et gérez les accès importants de votre compte depuis un seul endroit.</p></header>
-<h2 class="settings-section-title">Apparence</h2>
-<section class="settings-card" aria-label="Préférences d'apparence">
-<div class="settings-row"><div class="settings-leading"><div class="settings-icon" aria-hidden="true">◐</div><div class="settings-copy"><h3>Thème de l'interface</h3><p>Choisissez l'apparence de votre espace. Votre préférence sera conservée sur cet appareil et appliquée aux pages développeur.</p></div></div>
-<div class="theme-options" role="group" aria-label="Choisir le thème"><button type="button" class="theme-choice" data-theme-choice="light" aria-pressed="false">☀ Clair</button><button type="button" class="theme-choice" data-theme-choice="dark" aria-pressed="false">☾ Sombre</button><button type="button" class="theme-choice" data-theme-choice="system" aria-pressed="false">◉ Système</button></div></div>
-<div class="settings-status" id="themeStatus" role="status" aria-live="polite">Préférence d'apparence enregistrée sur cet appareil.</div>
-</section>
-<h2 class="settings-section-title">Compte et confidentialité</h2>
-<section class="settings-card">
-<div class="settings-row"><div class="settings-leading"><div class="settings-icon" aria-hidden="true">◎</div><div class="settings-copy"><h3>Informations personnelles</h3><p>Consultez et modifiez votre nom, votre photo de profil et vos coordonnées.</p></div></div><a class="btn btn-outline settings-action" href="profile.html">Gérer mon profil</a></div>
-<div class="settings-row"><div class="settings-leading"><div class="settings-icon" aria-hidden="true">⌑</div><div class="settings-copy"><h3>Mot de passe</h3><p>Changez votre mot de passe depuis votre profil. Le changement demande le mot de passe actuel et révoque les anciennes sessions développeur.</p></div></div><a class="btn btn-outline settings-action" href="profile.html#passwordTitle">Modifier le mot de passe</a></div>
-</section>
-<h2 class="settings-section-title">Sécurité de la session</h2>
-<section class="settings-card">
-<div class="settings-row"><div class="settings-leading"><div class="settings-icon" aria-hidden="true">▣</div><div class="settings-copy"><h3>Appareil actuel</h3><p>Informations techniques communiquées par votre navigateur. Elles ne remplacent pas une liste de sessions actives côté serveur.</p></div></div><div class="settings-device" id="deviceInfo">Analyse de l'appareil…</div></div>
-<div class="settings-row settings-danger"><div class="settings-leading"><div class="settings-icon" aria-hidden="true">↪</div><div class="settings-copy"><h3>Se déconnecter</h3><p>Fermez votre session sur cet appareil. Votre jeton de session sera révoqué par le serveur.</p></div></div><button class="btn settings-action" id="logoutNow" type="button">Se déconnecter</button></div>
-</section>
-<p class="settings-note">WEB STORE ne vous demandera jamais de communiquer votre mot de passe par message. Gardez vos identifiants confidentiels et utilisez un mot de passe unique.</p>
-</div></main></div>
-<script src="../js/config.js"></script><script src="../js/api.js"></script><script src="../js/auth.js"></script><script src="../js/dev-shell.js"></script>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">WEB<span>STORE</span></div>
+    <nav class="sidebar-nav" aria-label="Navigation principale">
+      <a href="dashboard.html">Vue générale</a>
+      <a href="projects.html">Mes projets</a>
+      <a href="project-form.html">Publier un projet</a>
+      <a href="statistics.html">Statistiques</a>
+      <a href="comments.html">Commentaires</a>
+      <a href="messages.html">Messages</a>
+      <a href="notifications.html">Notifications</a>
+      <a href="profile.html">Mon profil</a>
+      <a href="settings.html">Paramètres et sécurité</a>
+      <a href="help.html">Centre d'aide</a>
+    </nav>
+    <div class="sidebar-footer"><button class="sidebar-logout" id="logoutBtn" type="button">Se déconnecter</button></div>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">☰</button>
+      <div class="topbar-title">Paramètres</div>
+      <div></div>
+    </header>
+
+    <div class="page settings-page">
+      <div class="settings-heading">
+        <h1>Paramètres et sécurité</h1>
+      </div>
+
+      <section class="settings-section" aria-labelledby="appearanceTitle">
+        <div class="settings-section-heading">
+          <h2 id="appearanceTitle">Apparence</h2>
+        </div>
+        <div class="settings-row settings-theme-row">
+          <div class="settings-row-copy">
+            <h3>Thème</h3>
+            <p>Choisissez l'apparence de votre espace.</p>
+          </div>
+          <div class="theme-options" role="group" aria-label="Choisir le thème">
+            <button class="theme-option" type="button" data-theme-choice="light" aria-pressed="false">Clair</button>
+            <button class="theme-option" type="button" data-theme-choice="dark" aria-pressed="false">Sombre</button>
+            <button class="theme-option" type="button" data-theme-choice="system" aria-pressed="false">Système</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-section" aria-labelledby="accountTitle">
+        <div class="settings-section-heading"><h2 id="accountTitle">Compte</h2></div>
+        <a class="settings-row settings-link-row" href="profile.html">
+          <span class="settings-row-copy"><strong>Informations du profil</strong><small>Nom, coordonnées et photo de profil</small></span>
+          <span class="settings-action">Modifier <span aria-hidden="true">›</span></span>
+        </a>
+      </section>
+
+      <section class="settings-section" aria-labelledby="securityTitle">
+        <div class="settings-section-heading"><h2 id="securityTitle">Sécurité</h2></div>
+        <a class="settings-row settings-link-row" href="profile.html#passwordTitle">
+          <span class="settings-row-copy"><strong>Mot de passe</strong><small>Modifier le mot de passe de votre compte</small></span>
+          <span class="settings-action">Modifier <span aria-hidden="true">›</span></span>
+        </a>
+      </section>
+
+      <section class="settings-section" aria-labelledby="sessionTitle">
+        <div class="settings-section-heading"><h2 id="sessionTitle">Session</h2></div>
+        <div class="settings-row settings-session-row">
+          <div class="settings-row-copy"><strong>Session actuelle</strong><small>Déconnectez-vous de cet appareil.</small></div>
+          <button class="settings-logout" id="logoutNow" type="button">Se déconnecter</button>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/dev-shell.js"></script>
 <script>
-(()=>{
- const STORAGE_KEY="webstore_dev_theme";
- const choices=[...document.querySelectorAll("[data-theme-choice]")];
- const status=document.getElementById("themeStatus");
- function applyTheme(preference){
-  const resolved=preference==="system"?(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):preference;
-  document.body.dataset.theme=resolved;
-  document.documentElement.dataset.theme=resolved;
-  choices.forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.themeChoice===preference)));
-  if(status)status.textContent=preference==="system"?"L'apparence suit les réglages de votre appareil.":`Thème ${preference==="dark"?"sombre":"clair"} activé et mémorisé sur cet appareil.`;
- }
- let saved="system";
- try{saved=localStorage.getItem(STORAGE_KEY)||"system";}catch(_){ }
- applyTheme(saved);
- choices.forEach(button=>button.addEventListener("click",()=>{
-  const value=button.dataset.themeChoice;
-  try{localStorage.setItem(STORAGE_KEY,value);}catch(_){if(status)status.textContent="Le navigateur ne permet pas de mémoriser cette préférence.";}
-  applyTheme(value);
- }));
- if(window.matchMedia){window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>{let pref="system";try{pref=localStorage.getItem(STORAGE_KEY)||"system";}catch(_){}if(pref==="system")applyTheme(pref);});}
- const ua=navigator.userAgent||"Navigateur non identifié";
- let device="Navigateur web";
- if(/Android/i.test(ua))device="Appareil Android";else if(/iPhone|iPad/i.test(ua))device="Appareil Apple";else if(/Windows/i.test(ua))device="Ordinateur Windows";else if(/Macintosh|Mac OS/i.test(ua))device="Ordinateur Mac";else if(/Linux/i.test(ua))device="Appareil Linux";
- document.getElementById("deviceInfo").textContent=device;
- document.getElementById("logoutNow").addEventListener("click",async()=>{
-  const button=document.getElementById("logoutNow");
-  if(!confirm("Voulez-vous vraiment fermer cette session ?"))return;
-  button.disabled=true;button.textContent="Déconnexion…";
-  try{await WebStoreDevAPI.logout();}catch(_){}
-  location.href="login.html";
- });
-})();
+  document.getElementById("logoutNow").addEventListener("click", async () => {
+    const button = document.getElementById("logoutNow");
+    button.disabled = true;
+    try { await WebStoreDevAPI.logout(); } catch (_) {}
+    window.location.href = "login.html";
+  });
 </script>
-</body></html>
+</body>
+</html>
