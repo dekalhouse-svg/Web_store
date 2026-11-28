@@ -1276,7 +1276,7 @@ def unique_slug(name):
     while Project.objects.filter(slug=s).exists(): s=f"{base}-{i}"; i+=1
     return s
 
-def validate_icon_data(value):
+def validate_icon_data(value, max_size=500 * 1024):
     if not value:
         return ""
     if not isinstance(value, str) or not value.startswith("data:image/"):
@@ -1292,8 +1292,10 @@ def validate_icon_data(value):
         raw = base64.b64decode(encoded, validate=True)
     except Exception:
         raise ValueError("Icône invalide.")
-    if len(raw) > 500 * 1024:
-        raise ValueError("L'icône ne doit pas dépasser 500 ko.")
+    if len(raw) > max_size:
+        limit_mb = max_size / (1024 * 1024)
+        limit_label = f"{int(limit_mb)} Mo" if limit_mb.is_integer() else f"{max_size // 1024} Ko"
+        raise ValueError("L’icône dépasse la limite serveur de 5 Mo. Pour de meilleures performances, privilégiez une icône de 2 Mo maximum.")
     signatures = {
     "image/png": raw.startswith(b"\x89PNG\r\n\x1a\n"),
     "image/jpeg": raw.startswith(b"\xff\xd8\xff"),
@@ -1311,7 +1313,7 @@ def create_dev_project(u,b):
     project_type = b.get("type", "WEB")
     if not isinstance(project_type, str) or project_type not in {"WEB", "PWA"}: return err("Type de projet invalide.")
     try:
-        icon_data=validate_icon_data(b.get("icon_data",""))
+        icon_data=validate_icon_data(b.get("icon_data",""), max_size=5 * 1024 * 1024)
     except ValueError as exc:
         return err(str(exc))
     pwa_verified=verify_pwa_url(url)
@@ -1336,7 +1338,7 @@ def dev_project_detail(request,project_id):
             return err("L'URL doit commencer par http:// ou https://.")
         if "icon_data" in b:
             try:
-                new_icon=validate_icon_data(b.get("icon_data",""))
+                new_icon=validate_icon_data(b.get("icon_data",""), max_size=5 * 1024 * 1024)
             except ValueError as exc:
                 return err(str(exc))
             if new_icon:
